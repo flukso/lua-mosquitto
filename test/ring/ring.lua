@@ -66,7 +66,7 @@ mqtt:set_callback(mosq.ON_MESSAGE, function(...)
 		end
 
 		print(string.format("Elapsed time: %d.%03d sec", elapsed_sec, elapsed_msec))
-		print(string.format("Throughput: %.3d msg/sec", (MOSQ_MAX_MSG * MOSQ_TTL) / (elapsed_sec + elapsed_msec / 1e3)))
+		print(string.format("Throughput: %d msg/sec", math.floor((MOSQ_MAX_MSG * MOSQ_TTL) / (elapsed_sec + elapsed_msec / 1e3))))
 		-- clean up the parent and all forked ring processes
 		nixio.kill(0, nixio.const.SIGTERM)
 	end
@@ -101,8 +101,8 @@ for i = 0, MOSQ_MAX_NODE - 1 do
 	nixio.nanosleep(0, 20000000) -- 20ms
 end
 
--- sleep for one second to allow all forked processes to settle down
-nixio.nanosleep(1, 0)
+-- sleep for a while to allow all forked processes to settle down
+nixio.nanosleep(math.floor(MOSQ_MAX_NODE / 5), 0)
 
 MOSQ_START_SEC, MOSQ_START_USEC = nixio.gettimeofday()
 print(string.format("Sending %d messages with ttl %d into a ring of %d nodes", MOSQ_MAX_MSG, MOSQ_TTL, MOSQ_MAX_NODE))
