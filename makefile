@@ -4,14 +4,20 @@ INCDIR = -I/usr/include/lua5.1
 LIBDIR = -L/usr/lib
 LUALIB = lua5.1
 
+ifeq ($(OPENWRT_BUILD),1)
+INCDIR =
+LIBDIR =
+LUALIB = lua
+endif
+
 CMOD = mosquitto.so
 OBJS = lua-mosquitto.o
 LIBS = -l$(LUALIB) -lmosquitto
 CSTD = -std=gnu99
 
 WARN = -Wall -pedantic
-CFLAGS = -fPIC $(CSTD) $(WARN) $(INCDIR)
-LDFLAGS = -shared $(CSTD) $(LIBDIR)
+CFLAGS += -fPIC $(CSTD) $(WARN) $(INCDIR)
+LDFLAGS += -shared $(CSTD) $(LIBDIR)
 
 $(CMOD): $(OBJS)
 	$(CC) $(LDFLAGS) $(OBJS) $(LIBS) -o $@
