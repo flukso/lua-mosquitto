@@ -42,9 +42,9 @@
 #endif
 
 /* re-using mqtt3 message types as callback types */
-#define CONNECT 	0x10
-#define PUBLISH 	0x30
-#define SUBSCRIBE 	0x80
+#define CONNECT		0x10
+#define PUBLISH		0x30
+#define SUBSCRIBE	0x80
 #define UNSUBSCRIBE	0xA0
 #define DISCONNECT	0xE0
 /* add two extra callback types */
@@ -74,6 +74,8 @@ typedef struct {
 	int on_unsubscribe;
 	int on_log;
 } ctx_t;
+
+static int mosq_initialized = 0;
 
 /* handle mosquitto lib return codes */
 static int mosq__pstatus(lua_State *L, int mosq_errno) {
@@ -123,13 +125,16 @@ static int mosq_version(lua_State *L)
 
 static int mosq_init(lua_State *L)
 {
-	mosquitto_lib_init();
+	if (!mosq_initialized)
+		mosquitto_lib_init();
+
 	return mosq__pstatus(L, MOSQ_ERR_SUCCESS);
 }
 
 static int mosq_cleanup(lua_State *L)
 {
 	mosquitto_lib_cleanup();
+	mosq_initialized = 0;
 	return mosq__pstatus(L, MOSQ_ERR_SUCCESS);
 }
 
@@ -466,7 +471,7 @@ static void ctx_on_connect(
 
 		case CONN_REF_NO_AUTH:
 			str = "connection refused - not authorised";
-			break;	
+			break;
 	}
 
 	lua_rawgeti(ctx->L, LUA_REGISTRYINDEX, ctx->on_connect);
@@ -499,7 +504,7 @@ static void ctx_on_disconnect(
 	lua_pushinteger(ctx->L, rc);
 	lua_pushstring(ctx->L, str);
 
-	lua_pcall(ctx->L, 3, 0, 0);	
+	lua_pcall(ctx->L, 3, 0, 0);
 }
 
 static void ctx_on_publish(
@@ -541,7 +546,7 @@ static void ctx_on_subscribe(
 	const int *granted_qos)
 {
 	ctx_t *ctx = obj;
-	int i;	
+	int i;
 
 	lua_rawgeti(ctx->L, LUA_REGISTRYINDEX, ctx->on_subscribe);
 	lua_pushinteger(ctx->L, mid);
@@ -686,8 +691,8 @@ static const struct luaL_Reg R[] = {
 static const struct luaL_Reg ctx_M[] = {
 	{"destroy",			ctx_destroy},
 	{"__gc",			ctx_destroy},
-	{"reinitialise", 	ctx_reinitialise},
-	{"set_will", 		ctx_will_set},
+	{"reinitialise",	ctx_reinitialise},
+	{"set_will",		ctx_will_set},
 	{"clear_will",		ctx_will_clear},
 	{"set_login",		ctx_login_set},
 	{"connect",			ctx_connect},
@@ -711,6 +716,9 @@ static const struct luaL_Reg ctx_M[] = {
 
 int luaopen_mosquitto(lua_State *L)
 {
+	mosquitto_lib_init();
+	mosq_initialized = 1;
+
 #if (LUA_VERSION_NUM < 502)
 	/* set private environment for this module */
 	lua_newtable(L);
