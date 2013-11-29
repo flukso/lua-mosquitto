@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <assert.h>
 
 #include <lua.h>
 #include <lualib.h>
@@ -35,10 +36,15 @@
 
 #include <mosquitto.h>
 
+#if LUA_VERSION_NUM < 502
+# define luaL_newlib(L,l) (lua_newtable(L), luaL_register(L,NULL,l))
+# define luaL_setfuncs(L,l,n) (assert(n==0), luaL_register(L,NULL,l))
+#endif
+
 /* re-using mqtt3 message types as callback types */
-#define CONNECT 	0x10
-#define PUBLISH 	0x30
-#define SUBSCRIBE 	0x80
+#define CONNECT		0x10
+#define PUBLISH		0x30
+#define SUBSCRIBE	0x80
 #define UNSUBSCRIBE	0xA0
 #define DISCONNECT	0xE0
 /* add two extra callback types */
@@ -68,6 +74,8 @@ typedef struct {
 	int on_unsubscribe;
 	int on_log;
 } ctx_t;
+
+static int mosq_initialized = 0;
 
 /* handle mosquitto lib return codes */
 static int mosq__pstatus(lua_State *L, int mosq_errno) {
@@ -117,13 +125,16 @@ static int mosq_version(lua_State *L)
 
 static int mosq_init(lua_State *L)
 {
-	mosquitto_lib_init();
+	if (!mosq_initialized)
+		mosquitto_lib_init();
+
 	return mosq__pstatus(L, MOSQ_ERR_SUCCESS);
 }
 
 static int mosq_cleanup(lua_State *L)
 {
 	mosquitto_lib_cleanup();
+	mosq_initialized = 0;
 	return mosq__pstatus(L, MOSQ_ERR_SUCCESS);
 }
 
@@ -253,11 +264,10 @@ static int ctx_login_set(lua_State *L)
 
 static int ctx_connect(lua_State *L)
 {
-	/* TODO add sensible defaults, especially for port & keepalive */
 	ctx_t *ctx = ctx_check(L, 1);
-	const char *host = luaL_checkstring(L, 2);
-	int port = luaL_checkint(L, 3);
-	int keepalive = luaL_checkint(L, 4);
+	const char *host = luaL_optstring(L, 2, "localhost");
+	int port = luaL_optinteger(L, 3, 1883);
+	int keepalive = luaL_optinteger(L, 4, 60);
 
 	int rc =  mosquitto_connect(ctx->mosq, host, port, keepalive);
 	return mosq__pstatus(L, rc);
@@ -265,11 +275,10 @@ static int ctx_connect(lua_State *L)
 
 static int ctx_connect_async(lua_State *L)
 {
-	/* TODO add sensible defaults, especially for port & keepalive */
 	ctx_t *ctx = ctx_check(L, 1);
-	const char *host = luaL_checkstring(L, 2);
-	int port = luaL_checkint(L, 3);
-	int keepalive = luaL_checkint(L, 4);
+	const char *host = luaL_optstring(L, 2, "localhost");
+	int port = luaL_optinteger(L, 3, 1883);
+	int keepalive = luaL_optinteger(L, 4, 60);
 
 	int rc =  mosquitto_connect_async(ctx->mosq, host, port, keepalive);
 	return mosq__pstatus(L, rc);
@@ -460,7 +469,7 @@ static void ctx_on_connect(
 
 		case CONN_REF_NO_AUTH:
 			str = "connection refused - not authorised";
-			break;	
+			break;
 	}
 
 	lua_rawgeti(ctx->L, LUA_REGISTRYINDEX, ctx->on_connect);
@@ -493,7 +502,7 @@ static void ctx_on_disconnect(
 	lua_pushinteger(ctx->L, rc);
 	lua_pushstring(ctx->L, str);
 
-	lua_pcall(ctx->L, 3, 0, 0);	
+	lua_pcall(ctx->L, 3, 0, 0);
 }
 
 static void ctx_on_publish(
@@ -535,7 +544,7 @@ static void ctx_on_subscribe(
 	const int *granted_qos)
 {
 	ctx_t *ctx = obj;
-	int i;	
+	int i;
 
 	lua_rawgeti(ctx->L, LUA_REGISTRYINDEX, ctx->on_subscribe);
 	lua_pushinteger(ctx->L, mid);
@@ -575,10 +584,18 @@ static void ctx_on_log(
 	lua_pcall(ctx->L, 2, 0, 0);
 }
 
+static int callback_type_from_string(const char *);
+
 static int ctx_callback_set(lua_State *L)
 {
 	ctx_t *ctx = ctx_check(L, 1);
-	int callback_type = luaL_checkint(L, 2);
+	int callback_type;
+
+	if (lua_isstring(L, 2)) {
+		callback_type = callback_type_from_string(lua_tostring(L, 2));
+	} else {
+		callback_type = luaL_checkint(L, 2);
+	}
 
 	if (!lua_isfunction(L, 3)) {
 		return luaL_argerror(L, 3, "expecting a callback function");
@@ -659,6 +676,20 @@ static const struct define D[] = {
 	{NULL,			0}
 };
 
+static int callback_type_from_string(const char *typestr)
+{
+	const struct define *def = D;
+	/* filter out LOG_ strings */
+	if (strstr(typestr, "ON_") != typestr)
+		return -1;
+	while (def->name != NULL) {
+		if (strcmp(def->name, typestr) == 0)
+			return def->value;
+		def++;
+	}
+	return -1;
+}
+
 static void mosq_register_defs(lua_State *L, const struct define *D)
 {
 	while (D->name != NULL) {
@@ -680,8 +711,8 @@ static const struct luaL_Reg R[] = {
 static const struct luaL_Reg ctx_M[] = {
 	{"destroy",			ctx_destroy},
 	{"__gc",			ctx_destroy},
-	{"reinitialise", 	ctx_reinitialise},
-	{"set_will", 		ctx_will_set},
+	{"reinitialise",	ctx_reinitialise},
+	{"set_will",		ctx_will_set},
 	{"clear_will",		ctx_will_clear},
 	{"set_login",		ctx_login_set},
 	{"connect",			ctx_connect},
@@ -700,22 +731,28 @@ static const struct luaL_Reg ctx_M[] = {
 	{"misc",			ctx_loop_misc},
 	{"want_write",		ctx_want_write},
 	{"set_callback",	ctx_callback_set},
+	{"__newindex",		ctx_callback_set},
 	{NULL,		NULL}
 };
 
 int luaopen_mosquitto(lua_State *L)
 {
+	mosquitto_lib_init();
+	mosq_initialized = 1;
+
+#if (LUA_VERSION_NUM < 502)
 	/* set private environment for this module */
 	lua_newtable(L);
 	lua_replace(L, LUA_ENVIRONINDEX);
+#endif
 
 	/* metatable.__index = metatable */
 	luaL_newmetatable(L, MOSQ_META_CTX);
 	lua_pushvalue(L, -1);
 	lua_setfield(L, -2, "__index");
-	luaL_register(L, NULL, ctx_M);
+	luaL_setfuncs(L, ctx_M, 0);
 
-	luaL_register(L, "mosquitto", R);
+	luaL_newlib(L, R);
 
 	/* register callback defs into mosquitto table */
 	mosq_register_defs(L, D);
