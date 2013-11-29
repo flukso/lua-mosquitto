@@ -586,10 +586,18 @@ static void ctx_on_log(
 	lua_pcall(ctx->L, 2, 0, 0);
 }
 
+static int callback_type_from_string(const char *);
+
 static int ctx_callback_set(lua_State *L)
 {
 	ctx_t *ctx = ctx_check(L, 1);
-	int callback_type = luaL_checkint(L, 2);
+	int callback_type;
+
+	if (lua_isstring(L, 2)) {
+		callback_type = callback_type_from_string(lua_tostring(L, 2));
+	} else {
+		callback_type = luaL_checkint(L, 2);
+	}
 
 	if (!lua_isfunction(L, 3)) {
 		return luaL_argerror(L, 3, "expecting a callback function");
@@ -670,6 +678,20 @@ static const struct define D[] = {
 	{NULL,			0}
 };
 
+static int callback_type_from_string(const char *typestr)
+{
+	const struct define *def = D;
+	/* filter out LOG_ strings */
+	if (strstr(typestr, "ON_") != typestr)
+		return -1;
+	while (def->name != NULL) {
+		if (strcmp(def->name, typestr) == 0)
+			return def->value;
+		def++;
+	}
+	return -1;
+}
+
 static void mosq_register_defs(lua_State *L, const struct define *D)
 {
 	while (D->name != NULL) {
@@ -711,6 +733,7 @@ static const struct luaL_Reg ctx_M[] = {
 	{"misc",			ctx_loop_misc},
 	{"want_write",		ctx_want_write},
 	{"set_callback",	ctx_callback_set},
+	{"__newindex",		ctx_callback_set},
 	{NULL,		NULL}
 };
 
