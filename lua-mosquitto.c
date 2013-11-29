@@ -264,11 +264,10 @@ static int ctx_login_set(lua_State *L)
 
 static int ctx_connect(lua_State *L)
 {
-	/* TODO add sensible defaults, especially for port & keepalive */
 	ctx_t *ctx = ctx_check(L, 1);
-	const char *host = luaL_checkstring(L, 2);
-	int port = luaL_checkint(L, 3);
-	int keepalive = luaL_checkint(L, 4);
+	const char *host = luaL_optstring(L, 2, "localhost");
+	int port = luaL_optinteger(L, 3, 1883);
+	int keepalive = luaL_optinteger(L, 4, 60);
 
 	int rc =  mosquitto_connect(ctx->mosq, host, port, keepalive);
 	return mosq__pstatus(L, rc);
@@ -276,11 +275,10 @@ static int ctx_connect(lua_State *L)
 
 static int ctx_connect_async(lua_State *L)
 {
-	/* TODO add sensible defaults, especially for port & keepalive */
 	ctx_t *ctx = ctx_check(L, 1);
-	const char *host = luaL_checkstring(L, 2);
-	int port = luaL_checkint(L, 3);
-	int keepalive = luaL_checkint(L, 4);
+	const char *host = luaL_optstring(L, 2, "localhost");
+	int port = luaL_optinteger(L, 3, 1883);
+	int keepalive = luaL_optinteger(L, 4, 60);
 
 	int rc =  mosquitto_connect_async(ctx->mosq, host, port, keepalive);
 	return mosq__pstatus(L, rc);
