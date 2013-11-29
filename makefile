@@ -2,17 +2,15 @@ LUAPATH = /usr/local/share/lua/5.1
 LUACPATH = /usr/local/lib/lua/5.1
 INCDIR = -I/usr/include/lua5.1
 LIBDIR = -L/usr/lib
-LUALIB = lua5.1
 
 ifeq ($(OPENWRT_BUILD),1)
 INCDIR =
 LIBDIR =
-LUALIB = lua
 endif
 
 CMOD = mosquitto.so
 OBJS = lua-mosquitto.o
-LIBS = -l$(LUALIB) -lmosquitto
+LIBS = -lmosquitto
 CSTD = -std=gnu99
 
 WARN = -Wall -pedantic
