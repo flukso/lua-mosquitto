@@ -44,6 +44,7 @@
 /* add two extra callback types */
 #define MESSAGE		0x01
 #define LOG			0x02
+#define ERROR			0x100
 
 enum connect_return_codes {
 	CONN_ACCEPT,
@@ -67,6 +68,7 @@ typedef struct {
 	int on_subscribe;
 	int on_unsubscribe;
 	int on_log;
+	int on_error;
 } ctx_t;
 
 /* handle mosquitto lib return codes */
@@ -136,6 +138,7 @@ static void ctx__on_init(ctx_t *ctx)
 	ctx->on_subscribe = LUA_REFNIL;
 	ctx->on_unsubscribe = LUA_REFNIL;
 	ctx->on_log = LUA_REFNIL;
+	ctx->on_error = LUA_REFNIL;
 }
 
 static void ctx__on_clear(ctx_t *ctx)
@@ -147,6 +150,7 @@ static void ctx__on_clear(ctx_t *ctx)
 	luaL_unref(ctx->L, LUA_REGISTRYINDEX, ctx->on_subscribe);
 	luaL_unref(ctx->L, LUA_REGISTRYINDEX, ctx->on_unsubscribe);
 	luaL_unref(ctx->L, LUA_REGISTRYINDEX, ctx->on_log);
+	luaL_unref(ctx->L, LUA_REGISTRYINDEX, ctx->on_error);
 }
 
 static int mosq_new(lua_State *L)
@@ -515,6 +519,9 @@ static void ctx_on_message(
 {
 	ctx_t *ctx = obj;
 
+	/* will push a nil, but doesn't matter */
+	lua_rawgeti(ctx->L, LUA_REGISTRYINDEX, ctx->on_error);
+
 	/* push registered Lua callback function onto the stack */
 	lua_rawgeti(ctx->L, LUA_REGISTRYINDEX, ctx->on_message);
 	/* push function args */
@@ -524,7 +531,12 @@ static void ctx_on_message(
 	lua_pushinteger(ctx->L, msg->qos);
 	lua_pushboolean(ctx->L, msg->retain);
 
-	lua_pcall(ctx->L, 5, 0, 0); /* args: mid, topic, payload, qos, retain */
+	int rc = lua_pcall(ctx->L, 5, 0, 0); /* args: mid, topic, payload, qos, retain */
+	if ((rc != 0) && (ctx->on_error != LUA_REFNIL)) {
+		lua_pushinteger(ctx->L, rc);
+		/* Just a single layer of error handling */
+		lua_pcall(ctx->L, 2, 0, 0); /* msg, rc */
+	}
 }
 
 static void ctx_on_subscribe(
@@ -625,6 +637,10 @@ static int ctx_callback_set(lua_State *L)
 			mosquitto_log_callback_set(ctx->mosq, ctx_on_log);
 			break;
 
+		case ERROR:
+			ctx->on_error = ref;
+			break;
+
 		default:
 			luaL_unref(L, LUA_REGISTRYINDEX, ref);
 			luaL_argerror(L, 2, "not a proper callback type");
@@ -647,6 +663,7 @@ static const struct define D[] = {
 	{"ON_SUBSCRIBE",	SUBSCRIBE},
 	{"ON_UNSUBSCRIBE",	UNSUBSCRIBE},
 	{"ON_LOG",			LOG},
+	{"ON_ERROR",		ERROR},
 
 	{"LOG_NONE",	MOSQ_LOG_NONE},
 	{"LOG_INFO",	MOSQ_LOG_INFO},
