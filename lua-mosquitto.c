@@ -469,7 +469,7 @@ static void ctx_on_connect(
 	lua_pushinteger(ctx->L, rc);
 	lua_pushstring(ctx->L, str);
 
-	lua_pcall(ctx->L, 3, 0, 0);
+	lua_call(ctx->L, 3, 0);
 }
 
 
@@ -493,7 +493,7 @@ static void ctx_on_disconnect(
 	lua_pushinteger(ctx->L, rc);
 	lua_pushstring(ctx->L, str);
 
-	lua_pcall(ctx->L, 3, 0, 0);	
+	lua_call(ctx->L, 3, 0);
 }
 
 static void ctx_on_publish(
@@ -505,7 +505,7 @@ static void ctx_on_publish(
 
 	lua_rawgeti(ctx->L, LUA_REGISTRYINDEX, ctx->on_publish);
 	lua_pushinteger(ctx->L, mid);
-	lua_pcall(ctx->L, 1, 0, 0);
+	lua_call(ctx->L, 1, 0);
 }
 
 static void ctx_on_message(
@@ -524,7 +524,7 @@ static void ctx_on_message(
 	lua_pushinteger(ctx->L, msg->qos);
 	lua_pushboolean(ctx->L, msg->retain);
 
-	lua_pcall(ctx->L, 5, 0, 0); /* args: mid, topic, payload, qos, retain */
+	lua_call(ctx->L, 5, 0); /* args: mid, topic, payload, qos, retain */
 }
 
 static void ctx_on_subscribe(
@@ -544,7 +544,7 @@ static void ctx_on_subscribe(
 		lua_pushinteger(ctx->L, granted_qos[i]);
 	}
 
-	lua_pcall(ctx->L, qos_count + 1, 0, 0);
+	lua_call(ctx->L, qos_count + 1, 0);
 }
 
 static void ctx_on_unsubscribe(
@@ -556,7 +556,7 @@ static void ctx_on_unsubscribe(
 
 	lua_rawgeti(ctx->L, LUA_REGISTRYINDEX, ctx->on_unsubscribe);
 	lua_pushinteger(ctx->L, mid);
-	lua_pcall(ctx->L, 1, 0 , 0);
+	lua_call(ctx->L, 1, 0);
 }
 
 static void ctx_on_log(
@@ -572,7 +572,7 @@ static void ctx_on_log(
 	lua_pushinteger(ctx->L, level);
 	lua_pushstring(ctx->L, str);
 
-	lua_pcall(ctx->L, 2, 0, 0);
+	lua_call(ctx->L, 2, 0);
 }
 
 static int ctx_callback_set(lua_State *L)
