@@ -13,7 +13,7 @@ Compile with
 
     make
 
-You can override the pkg-config pagkage name to set a specific Lua version.
+You can override the pkg-config package name to set a specific Lua version.
 For example:
 
     make LUAPKGC=lua5.2
