@@ -327,7 +327,7 @@ static int ctx_subscribe(lua_State *L)
 	ctx_t *ctx = ctx_check(L, 1);
 	int mid;
 	const char *sub = luaL_checkstring(L, 2);
-	int qos = luaL_checkinteger(L, 3);
+	int qos = luaL_optint(L, 3, 0);
 
 	int rc = mosquitto_subscribe(ctx->mosq, &mid, sub, qos);
 
