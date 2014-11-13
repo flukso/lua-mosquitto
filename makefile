@@ -31,7 +31,8 @@ $(CMOD): $(OBJS)
 	$(CC) -c $(CFLAGS) -o $@ $<
 
 install:
-	cp $(CMOD) $(LUA_LIBDIR)/lua/$(LUA_VERSION)
+	mkdir -p $(DESTDIR)$(LUA_LIBDIR)/lua/$(LUA_VERSION)
+	cp $(CMOD) $(DESTDIR)$(LUA_LIBDIR)/lua/$(LUA_VERSION)
 
 clean:
 	$(RM) $(CMOD) $(OBJS)
