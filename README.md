@@ -26,7 +26,7 @@ and prints out the resulting messages:
 
 ```Lua
 mqtt = require("mosquitto")
-client = mqtt.new("test-id")
+client = mqtt.new()
 
 client.ON_CONNECT = function()
         print("connected")
