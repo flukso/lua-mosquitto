@@ -359,7 +359,7 @@ static int ctx_loop(lua_State *L)
 {
 	ctx_t *ctx = ctx_check(L, 1);
 	int timeout = luaL_checkint(L, 2);
-	int max_packets = luaL_checkint(L, 3);
+	int max_packets = luaL_optint(L, 3, 1);
 
 	int rc = mosquitto_loop(ctx->mosq, timeout, max_packets);
 	return mosq__pstatus(L, rc);
@@ -402,7 +402,7 @@ static int ctx_socket(lua_State *L)
 static int ctx_loop_read(lua_State *L)
 {
 	ctx_t *ctx = ctx_check(L, 1);
-	int max_packets = luaL_checkint(L, 2);
+	int max_packets = luaL_optint(L, 2, 1);
 
 	int rc = mosquitto_loop_read(ctx->mosq, max_packets);
 	return mosq__pstatus(L, rc);
@@ -411,7 +411,7 @@ static int ctx_loop_read(lua_State *L)
 static int ctx_loop_write(lua_State *L)
 {
 	ctx_t *ctx = ctx_check(L, 1);
-	int max_packets = luaL_checkint(L, 2);
+	int max_packets = luaL_optint(L, 2, 1);
 
 	int rc = mosquitto_loop_write(ctx->mosq, max_packets);
 	return mosq__pstatus(L, rc);
