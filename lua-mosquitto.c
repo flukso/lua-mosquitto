@@ -28,12 +28,15 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <assert.h>
 
 #include <lua.h>
 #include <lualib.h>
 #include <lauxlib.h>
 
 #include <mosquitto.h>
+
+#include "compat.h"
 
 /* re-using mqtt3 message types as callback types */
 #define CONNECT		0x10
@@ -736,17 +739,19 @@ int luaopen_mosquitto(lua_State *L)
 	mosquitto_lib_init();
 	mosq_initialized = 1;
 
+#ifdef LUA_ENVIRONINDEX
 	/* set private environment for this module */
 	lua_newtable(L);
 	lua_replace(L, LUA_ENVIRONINDEX);
+#endif
 
 	/* metatable.__index = metatable */
 	luaL_newmetatable(L, MOSQ_META_CTX);
 	lua_pushvalue(L, -1);
 	lua_setfield(L, -2, "__index");
-	luaL_register(L, NULL, ctx_M);
+	luaL_setfuncs(L, ctx_M, 0);
 
-	luaL_register(L, "mosquitto", R);
+	luaL_newlib(L, R);
 
 	/* register callback defs into mosquitto table */
 	mosq_register_defs(L, D);
