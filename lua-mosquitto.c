@@ -159,8 +159,8 @@ static void ctx__on_clear(ctx_t *ctx)
 
 static int mosq_new(lua_State *L)
 {
-	const char *id = (lua_isnil(L, 1) ? NULL : luaL_checkstring(L, 1));
-	bool clean_session = lua_toboolean(L, 2);
+	const char *id = luaL_optstring(L, 1, NULL);
+	bool clean_session = (lua_isboolean(L, 2) ? lua_toboolean(L, 2) : true);
 
 	if (id == NULL && !clean_session) {
 		return luaL_argerror(L, 2, "if 'id' is nil then 'clean session' must be true");
@@ -207,8 +207,8 @@ static int ctx_destroy(lua_State *L)
 static int ctx_reinitialise(lua_State *L)
 {
 	ctx_t *ctx = ctx_check(L, 1);
-	const char *id = (lua_isnil(L, 2) ? NULL : luaL_checkstring(L, 2));
-	bool clean_session = lua_toboolean(L, 3);
+	const char *id = luaL_optstring(L, 1, NULL);
+	bool clean_session = (lua_isboolean(L, 2) ? lua_toboolean(L, 2) : true);
 
 	if (id == NULL && !clean_session) {
 		return luaL_argerror(L, 3, "if 'id' is nil then 'clean session' must be true");
