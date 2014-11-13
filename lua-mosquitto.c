@@ -355,14 +355,28 @@ static int ctx_unsubscribe(lua_State *L)
 	}
 }
 
-static int ctx_loop(lua_State *L)
+static int mosq_loop(lua_State *L, bool forever)
 {
 	ctx_t *ctx = ctx_check(L, 1);
 	int timeout = luaL_checkint(L, 2);
 	int max_packets = luaL_optint(L, 3, 1);
-
-	int rc = mosquitto_loop(ctx->mosq, timeout, max_packets);
+	int rc;
+	if (forever) {
+		rc = mosquitto_loop_forever(ctx->mosq, timeout, max_packets);
+	} else {
+		rc = mosquitto_loop(ctx->mosq, timeout, max_packets);
+	}
 	return mosq__pstatus(L, rc);
+}
+
+static int ctx_loop(lua_State *L)
+{
+	return mosq_loop(L, false);
+}
+
+static int ctx_loop_forever(lua_State *L)
+{
+	return mosq_loop(L, true);
 }
 
 static int ctx_loop_start(lua_State *L)
@@ -720,6 +734,7 @@ static const struct luaL_Reg ctx_M[] = {
 	{"subscribe",		ctx_subscribe},
 	{"unsubscribe",		ctx_unsubscribe},
 	{"loop",			ctx_loop},
+	{"loop_forever",	ctx_loop_forever},
 	{"start_loop",		ctx_loop_start},
 	{"stop_loop",		ctx_loop_stop},
 	{"socket",			ctx_socket},
