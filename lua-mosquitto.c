@@ -302,14 +302,14 @@ static int ctx_publish(lua_State *L)
 	ctx_t *ctx = ctx_check(L, 1);
 	int mid;	/* message id is referenced in the publish callback */
 	const char *topic = luaL_checkstring(L, 2);
+	size_t payloadlen = 0;
+	const void *payload = NULL;
 
-	if (!lua_isstring(L, 3)) {
-		return luaL_argerror(L, 3, "payload should be a string or number");
+	if (!lua_isnil(L, 3)) {
+		payload = lua_tolstring(L, 3, &payloadlen);
 	};
 
-	size_t payloadlen;
-	const void *payload = lua_tolstring(L, 3, &payloadlen);
-	int qos = luaL_checkint(L, 4);
+	int qos = luaL_optint(L, 4, 0);
 	bool retain = lua_toboolean(L, 5);
 
 	int rc = mosquitto_publish(ctx->mosq, &mid, topic, payloadlen, payload, qos, retain);
