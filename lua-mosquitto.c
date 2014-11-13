@@ -358,7 +358,7 @@ static int ctx_unsubscribe(lua_State *L)
 static int mosq_loop(lua_State *L, bool forever)
 {
 	ctx_t *ctx = ctx_check(L, 1);
-	int timeout = luaL_checkint(L, 2);
+	int timeout = luaL_optint(L, 2, -1);
 	int max_packets = luaL_optint(L, 3, 1);
 	int rc;
 	if (forever) {
