@@ -24,6 +24,10 @@ ifeq ($(OPENWRT_BUILD),1)
 LUA_VERSION=
 endif
 
+ifeq ($(LUA_MOSQUITTO_COMPAT),yes)
+CFLAGS += -DLUA_MOSQUITTO_COMPAT
+endif
+
 $(CMOD): $(OBJS)
 	$(CC) $(LDFLAGS) $(OBJS) $(LIBS) -o $@
 

@@ -745,6 +745,7 @@ static const struct luaL_Reg ctx_M[] = {
 	{"callback_set",	ctx_callback_set},
 	{"__newindex",		ctx_callback_set},
 
+#ifdef LUA_MOSQUITTO_COMPAT
 	/* those are kept for compat */
 	{"set_will",		ctx_will_set},
 	{"clear_will",		ctx_will_clear},
@@ -755,6 +756,7 @@ static const struct luaL_Reg ctx_M[] = {
 	{"read",		ctx_loop_read},
 	{"write",		ctx_loop_write},
 	{"misc",		ctx_loop_misc},
+#endif
 
 	{NULL,		NULL}
 };
