@@ -2,7 +2,9 @@
 
   lua-mosquitto.c - Lua bindings to libmosquitto
 
-  Copyright 2013 Bart Van Der Meerssche <bart@flukso.net>.
+  Copyright (c) 2014 Bart Van Der Meerssche <bart@flukso.net>
+                     Natanael Copa <ncopa@alpinelinux.org>
+                     Karl Palsson <karlp@remake.is>
 
   Permission is hereby granted, free of charge, to any person obtaining
   a copy of this software and associated documentation files (the
