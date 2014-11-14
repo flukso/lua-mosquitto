@@ -37,7 +37,28 @@ client.ON_MESSAGE = function(mid, topic, payload)
         print(topic, payload)
 end
 
-client:connect(arg[1]) -- defaults to "localhost" if arg not set
+broker = arg[1] -- defaults to "localhost" if arg not set
+client:connect(broker)
+client:loop_forever()
+```
+
+Here is another simple example that will just publish a single message,
+"hello", to the topic "world" and then disconnect.
+
+```Lua
+mqtt = require("mosquitto")
+client = mqtt.new()
+
+client.ON_CONNECT = function()
+        client:publish("world", "hello")
+end
+
+client.ON_PUBLISH = function()
+	client:disconnect()
+end
+
+broker = arg[1] -- defaults to "localhost" if arg not set
+client:connect(broker)
 client:loop_forever()
 ```
 
