@@ -56,7 +56,8 @@ enum connect_return_codes {
 	CONN_REF_BAD_ID,
 	CONN_REF_SERVER_NOAVAIL,
 	CONN_REF_BAD_LOGIN,
-	CONN_REF_NO_AUTH
+	CONN_REF_NO_AUTH,
+	CONN_REF_BAD_TLS
 };
 
 /* unique naming for userdata metatables */
@@ -258,6 +259,20 @@ static int ctx_login_set(lua_State *L)
 	const char *password = (lua_isnil(L, 3) ? NULL : luaL_checkstring(L, 3));
 
 	int rc = mosquitto_username_pw_set(ctx->mosq, username, password);
+	return mosq__pstatus(L, rc);
+}
+
+static int ctx_tls_set(lua_State *L)
+{
+	ctx_t *ctx = ctx_check(L, 1);
+	const char *cafile = (lua_isnil(L, 2) ? NULL : luaL_checkstring(L, 2));
+	const char *capath = (lua_isnil(L, 3) ? NULL : luaL_checkstring(L, 3));
+	const char *certfile = (lua_isnil(L, 4) ? NULL : luaL_checkstring(L, 4));
+	const char *keyfile = (lua_isnil(L, 5) ? NULL : luaL_checkstring(L, 5));
+
+	// the last param is a callback to a function that asks for a passphrase for a keyfile
+	// our keyfiles should NOT have a passphrase
+	int rc = mosquitto_tls_set(ctx->mosq, cafile, capath, certfile, keyfile, 0);
 	return mosq__pstatus(L, rc);
 }
 
@@ -482,6 +497,10 @@ static void ctx_on_connect(
 
 		case CONN_REF_NO_AUTH:
 			str = "connection refused - not authorised";
+			break;
+		
+		case CONN_REF_BAD_TLS:
+			str = "connection refused - TLS error";
 			break;
 	}
 
@@ -728,6 +747,7 @@ static const struct luaL_Reg ctx_M[] = {
 	{"will_set",		ctx_will_set},
 	{"will_clear",		ctx_will_clear},
 	{"login_set",		ctx_login_set},
+	{"tls_set",		ctx_tls_set},
 	{"connect",			ctx_connect},
 	{"connect_async",	ctx_connect_async},
 	{"reconnect",		ctx_reconnect},
