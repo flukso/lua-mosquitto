@@ -265,10 +265,10 @@ static int ctx_login_set(lua_State *L)
 static int ctx_tls_set(lua_State *L)
 {
 	ctx_t *ctx = ctx_check(L, 1);
-	const char *cafile = (lua_isnil(L, 2) ? NULL : luaL_checkstring(L, 2));
-	const char *capath = (lua_isnil(L, 3) ? NULL : luaL_checkstring(L, 3));
-	const char *certfile = (lua_isnil(L, 4) ? NULL : luaL_checkstring(L, 4));
-	const char *keyfile = (lua_isnil(L, 5) ? NULL : luaL_checkstring(L, 5));
+	const char *cafile = luaL_optstring(L, 2, NULL);
+	const char *capath = luaL_optstring(L, 3, NULL);
+	const char *certfile = luaL_optstring(L, 4, NULL);
+	const char *keyfile = luaL_optstring(L, 5, NULL);
 
 	// the last param is a callback to a function that asks for a passphrase for a keyfile
 	// our keyfiles should NOT have a passphrase
@@ -498,7 +498,7 @@ static void ctx_on_connect(
 		case CONN_REF_NO_AUTH:
 			str = "connection refused - not authorised";
 			break;
-		
+
 		case CONN_REF_BAD_TLS:
 			str = "connection refused - TLS error";
 			break;
