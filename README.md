@@ -3,6 +3,9 @@ lua-mosquitto
 
 Lua bindings to the [libmosquitto](http://www.mosquitto.org/) client library.
 
+The parameters to all functions are as per [libmosquitto's api](http://mosquitto.org/api)
+only with sensible defaults for optional values, and return values directly
+rather than via pointers.
 
 Compile
 -------
@@ -31,6 +34,7 @@ client = mqtt.new()
 client.ON_CONNECT = function()
         print("connected")
         client:subscribe("$SYS/#")
+        local mid = client:subscribe("complicated/topic", 2)
 end
 
 client.ON_MESSAGE = function(mid, topic, payload)
@@ -51,6 +55,9 @@ client = mqtt.new()
 
 client.ON_CONNECT = function()
         client:publish("world", "hello")
+        local qos = 1
+        local retain = true
+        local mid = client:publish("my/topic/", "my payload", qos, retain)
 end
 
 client.ON_PUBLISH = function()
