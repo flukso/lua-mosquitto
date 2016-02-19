@@ -276,6 +276,15 @@ static int ctx_tls_set(lua_State *L)
 	return mosq__pstatus(L, rc);
 }
 
+static int ctx_tls_insecure_set(lua_State *L)
+{
+	ctx_t *ctx = ctx_check(L, 1);
+	bool value = lua_toboolean(L, 2);
+
+	int rc = mosquitto_tls_insecure_set(ctx->mosq, value);
+	return mosq__pstatus(L, rc);
+}
+
 static int ctx_connect(lua_State *L)
 {
 	ctx_t *ctx = ctx_check(L, 1);
@@ -747,6 +756,7 @@ static const struct luaL_Reg ctx_M[] = {
 	{"will_set",		ctx_will_set},
 	{"will_clear",		ctx_will_clear},
 	{"login_set",		ctx_login_set},
+	{"tls_insecure_set",	ctx_tls_insecure_set},
 	{"tls_set",		ctx_tls_set},
 	{"connect",			ctx_connect},
 	{"connect_async",	ctx_connect_async},
