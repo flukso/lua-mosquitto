@@ -3,8 +3,8 @@
   lua-mosquitto.c - Lua bindings to libmosquitto
 
   Copyright (c) 2014 Bart Van Der Meerssche <bart@flukso.net>
-                     Natanael Copa <ncopa@alpinelinux.org>
-                     Karl Palsson <karlp@remake.is>
+					 Natanael Copa <ncopa@alpinelinux.org>
+					 Karl Palsson <karlp@remake.is>
 
   Permission is hereby granted, free of charge, to any person obtaining
   a copy of this software and associated documentation files (the
@@ -273,6 +273,15 @@ static int ctx_tls_set(lua_State *L)
 	// the last param is a callback to a function that asks for a passphrase for a keyfile
 	// our keyfiles should NOT have a passphrase
 	int rc = mosquitto_tls_set(ctx->mosq, cafile, capath, certfile, keyfile, 0);
+	return mosq__pstatus(L, rc);
+}
+
+static int ctx_tls_insecure_set(lua_State *L)
+{
+	ctx_t *ctx = ctx_check(L, 1);
+	bool value = lua_toboolean(L, 2);
+
+	int rc = mosquitto_tls_insecure_set(ctx->mosq, value);
 	return mosq__pstatus(L, rc);
 }
 
@@ -747,6 +756,7 @@ static const struct luaL_Reg ctx_M[] = {
 	{"will_set",		ctx_will_set},
 	{"will_clear",		ctx_will_clear},
 	{"login_set",		ctx_login_set},
+	{"tls_insecure_set", ctx_tls_insecure_set},
 	{"tls_set",		ctx_tls_set},
 	{"connect",			ctx_connect},
 	{"connect_async",	ctx_connect_async},
