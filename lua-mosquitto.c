@@ -3,8 +3,8 @@
   lua-mosquitto.c - Lua bindings to libmosquitto
 
   Copyright (c) 2014 Bart Van Der Meerssche <bart@flukso.net>
-                     Natanael Copa <ncopa@alpinelinux.org>
-                     Karl Palsson <karlp@remake.is>
+					 Natanael Copa <ncopa@alpinelinux.org>
+					 Karl Palsson <karlp@remake.is>
 
   Permission is hereby granted, free of charge, to any person obtaining
   a copy of this software and associated documentation files (the
@@ -278,11 +278,11 @@ static int ctx_tls_set(lua_State *L)
 
 static int ctx_tls_insecure_set(lua_State *L)
 {
-    ctx_t *ctx = ctx_check(L, 1);
-    bool value = lua_toboolean(L, 2);
+	ctx_t *ctx = ctx_check(L, 1);
+	bool value = lua_toboolean(L, 2);
 
-    int rc = mosquitto_tls_insecure_set(ctx->mosq, value);
-    return mosq__pstatus(L, rc);
+	int rc = mosquitto_tls_insecure_set(ctx->mosq, value);
+	return mosq__pstatus(L, rc);
 }
 
 static int ctx_connect(lua_State *L)
