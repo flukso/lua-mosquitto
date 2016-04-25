@@ -1,7 +1,8 @@
 PKGC ?= pkg-config
 
+LUAPKG ?= lua lua5.1 lua5.2 lua5.3
 # lua's package config can be under various names
-LUAPKGC := $(shell for pc in lua lua5.1 lua5.2 lua5.3; do \
+LUAPKGC := $(shell for pc in $(LUAPKG); do \
 		$(PKGC) --exists $$pc && echo $$pc && break; \
 	done)
 
