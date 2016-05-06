@@ -770,8 +770,8 @@ static const struct luaL_Reg ctx_M[] = {
 	{"will_clear",		ctx_will_clear},
 	{"login_set",		ctx_login_set},
 	{"tls_insecure_set",	ctx_tls_insecure_set},
-	{"tls_set",		ctx_tls_set},
-	{"tls_opts_set",ctx_tls_opts_set}
+	{"tls_set",	ctx_tls_set},
+	{"tls_opts_set",ctx_tls_opts_set},
 	{"connect",			ctx_connect},
 	{"connect_async",	ctx_connect_async},
 	{"reconnect",		ctx_reconnect},
