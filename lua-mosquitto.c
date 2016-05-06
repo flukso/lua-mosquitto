@@ -283,7 +283,7 @@ static int ctx_mosquitto_version_set(lua_State *L)
 	if(!strcmp(mqtt_version, "mqttv31"))
 	{
 		protocol_version = MQTT_PROTOCOL_V31;
-	}else if(!strcmp(argv[i+1], "mqttv311")){
+	}else if(!strcmp(mqtt_version, "mqttv311")){
 		protocol_version = MQTT_PROTOCOL_V311;
 	}
 	
