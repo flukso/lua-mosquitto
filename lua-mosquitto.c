@@ -262,6 +262,19 @@ static int ctx_login_set(lua_State *L)
 	return mosq__pstatus(L, rc);
 }
 
+static int ctx_tls_opts_set(lua_State *L)
+{
+	ctx_t *ctx = ctx_check(L, 1);
+	int cert_reqs = luaL_optinteger(L, 2, 0);
+	const char *tls_version	 = luaL_optstring(L, 3, NULL);
+	const char *ciphers = luaL_optstring(L, 4, NULL);
+	
+	// the last param is a callback to a function that asks for a passphrase for a keyfile
+	// our keyfiles should NOT have a passphrase
+	int rc = mosquitto_tls_opts_set(ctx->mosq, cert_reqs, tls_version, ciphers);
+	return mosq__pstatus(L, rc);
+}
+
 static int ctx_tls_set(lua_State *L)
 {
 	ctx_t *ctx = ctx_check(L, 1);
@@ -758,6 +771,7 @@ static const struct luaL_Reg ctx_M[] = {
 	{"login_set",		ctx_login_set},
 	{"tls_insecure_set",	ctx_tls_insecure_set},
 	{"tls_set",		ctx_tls_set},
+	{"tls_opts_set",ctx_tls_opts_set}
 	{"connect",			ctx_connect},
 	{"connect_async",	ctx_connect_async},
 	{"reconnect",		ctx_reconnect},
