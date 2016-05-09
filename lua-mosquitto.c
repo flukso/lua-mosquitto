@@ -268,9 +268,7 @@ static int ctx_tls_opts_set(lua_State *L)
 	int cert_reqs = luaL_optinteger(L, 2, 0);
 	const char *tls_version	 = luaL_optstring(L, 3, NULL);
 	const char *ciphers = luaL_optstring(L, 4, NULL);
-	
-	// the last param is a callback to a function that asks for a passphrase for a keyfile
-	// our keyfiles should NOT have a passphrase
+		
 	int rc = mosquitto_tls_opts_set(ctx->mosq, cert_reqs, tls_version, ciphers);
 	return mosq__pstatus(L, rc);
 }
@@ -287,8 +285,8 @@ static int ctx_mosquitto_version_set(lua_State *L)
 		protocol_version = MQTT_PROTOCOL_V311;
 	}
 	
-	// the last param is a callback to a function that asks for a passphrase for a keyfile
-	// our keyfiles should NOT have a passphrase
+	/* the last param is a callback to a function that asks for a passphrase for a keyfile
+	 our keyfiles should NOT have a passphrase */
 	int rc = mosquitto_opts_set(ctx->mosq, MOSQ_OPT_PROTOCOL_VERSION, &protocol_version);
 	return mosq__pstatus(L, rc);
 }
@@ -343,6 +341,14 @@ static int ctx_reconnect(lua_State *L)
 	ctx_t *ctx = ctx_check(L, 1);
 
 	int rc = mosquitto_reconnect(ctx->mosq);
+	return mosq__pstatus(L, rc);
+}
+
+static int ctx_reconnect_async(lua_State *L)
+{
+	ctx_t *ctx = ctx_check(L, 1);
+
+	int rc = mosquitto_reconnect_async(ctx->mosq);
 	return mosq__pstatus(L, rc);
 }
 
@@ -794,6 +800,7 @@ static const struct luaL_Reg ctx_M[] = {
 	{"connect",			ctx_connect},
 	{"connect_async",	ctx_connect_async},
 	{"reconnect",		ctx_reconnect},
+	{"reconnect_async",	ctx_reconnect_async},
 	{"disconnect",		ctx_disconnect},
 	{"publish",			ctx_publish},
 	{"subscribe",		ctx_subscribe},
