@@ -284,9 +284,7 @@ static int ctx_mosquitto_version_set(lua_State *L)
 	}else if(!strcmp(mqtt_version, "mqttv311")){
 		protocol_version = MQTT_PROTOCOL_V311;
 	}
-	
-	/* the last param is a callback to a function that asks for a passphrase for a keyfile
-	 our keyfiles should NOT have a passphrase */
+		
 	int rc = mosquitto_opts_set(ctx->mosq, MOSQ_OPT_PROTOCOL_VERSION, &protocol_version);
 	return mosq__pstatus(L, rc);
 }
