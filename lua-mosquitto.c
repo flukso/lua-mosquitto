@@ -692,6 +692,14 @@ static int ctx_callback_set(lua_State *L)
 	return mosq__pstatus(L, MOSQ_ERR_SUCCESS);
 }
 
+static void ctx_message_retry_set(lua_State *L)
+{
+	ctx_t *ctx = ctx_check(L, 1);
+	int message_retry = luaL_optinteger(L, 2, 20);
+
+	mosquitto_message_retry_set(ctx->mosq, message_retry);
+}
+
 struct define {
 	const char* name;
 	int value;
@@ -775,6 +783,7 @@ static const struct luaL_Reg ctx_M[] = {
 	{"loop_misc",			ctx_loop_misc},
 	{"want_write",		ctx_want_write},
 	{"callback_set",	ctx_callback_set},
+	{"message_retry_set",	ctx_message_retry_set},
 	{"__newindex",		ctx_callback_set},
 
 #ifdef LUA_MOSQUITTO_COMPAT
