@@ -300,6 +300,17 @@ static int ctx_tls_insecure_set(lua_State *L)
 	return mosq__pstatus(L, rc);
 }
 
+static int ctx_tls_psk_set(lua_State *L)
+{
+	ctx_t *ctx = ctx_check(L, 1);
+	const char *psk = luaL_checkstring(L, 2);
+	const char *identity = luaL_checkstring(L, 3);
+	const char *ciphers = luaL_optstring(L, 4, NULL);
+
+	int rc = mosquitto_tls_psk_set(ctx->mosq, psk, identity, ciphers);
+	return mosq__pstatus(L, rc);
+}
+
 static int ctx_connect(lua_State *L)
 {
 	ctx_t *ctx = ctx_check(L, 1);
@@ -774,6 +785,7 @@ static const struct luaL_Reg ctx_M[] = {
 	{"login_set",		ctx_login_set},
 	{"tls_insecure_set",	ctx_tls_insecure_set},
 	{"tls_set",		ctx_tls_set},
+	{"tls_psk_set",		ctx_tls_psk_set},
 	{"connect",			ctx_connect},
 	{"connect_async",	ctx_connect_async},
 	{"reconnect",		ctx_reconnect},
