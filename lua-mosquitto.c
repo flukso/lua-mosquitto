@@ -609,6 +609,29 @@ static void ctx_on_unsubscribe(
 	lua_call(ctx->L, 1, 0);
 }
 
+static int traceback (lua_State *L) {
+	if (!lua_isstring(L, 1))  /* 'message' not a string? */
+		return 1;  /* keep it intact */
+	lua_pushglobaltable(L);
+	lua_getfield(L, -1, "debug");
+	lua_remove(L, -2);
+	if (!lua_istable(L, -1)) {
+		lua_pop(L, 1);
+		return 1;
+	}
+	lua_getfield(L, -1, "traceback");
+	if (!lua_isfunction(L, -1)) {
+		lua_pop(L, 2);
+		return 1;
+	}
+	lua_pushvalue(L, 1);  /* pass error message */
+	lua_pushinteger(L, 2);  /* skip this function and traceback */
+	lua_call(L, 2, 1);  /* call debug.traceback */
+	return 1;
+}
+
+
+
 static void ctx_on_log(
 	struct mosquitto *mosq,
 	void *obj,
@@ -617,12 +640,17 @@ static void ctx_on_log(
 {
 	ctx_t *ctx = obj;
 
+	lua_pushcfunction(ctx->L, traceback);
 	lua_rawgeti(ctx->L, LUA_REGISTRYINDEX, ctx->on_log);
 
 	lua_pushinteger(ctx->L, level);
 	lua_pushstring(ctx->L, str);
 
-	lua_call(ctx->L, 2, 0);
+	//lua_call(ctx->L, 2, 0);
+	if (lua_pcall(ctx->L, 2, 0, -4)) {
+		fprintf(stderr, "Uncaught Error: %s\n", lua_tostring(ctx->L, -1));
+	}
+	lua_pop(ctx->L, 1);
 }
 
 static int callback_type_from_string(const char *);
