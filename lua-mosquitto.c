@@ -473,6 +473,27 @@ static int ctx_want_write(lua_State *L)
 	return 1;
 }
 
+static int traceback (lua_State *L) {
+	if (!lua_isstring(L, 1))  /* 'message' not a string? */
+		return 1;  /* keep it intact */
+	lua_pushglobaltable(L);
+	lua_getfield(L, -1, "debug");
+	lua_remove(L, -2);
+	if (!lua_istable(L, -1)) {
+		lua_pop(L, 1);
+		return 1;
+	}
+	lua_getfield(L, -1, "traceback");
+	if (!lua_isfunction(L, -1)) {
+		lua_pop(L, 2);
+		return 1;
+	}
+	lua_pushvalue(L, 1);  /* pass error message */
+	lua_pushinteger(L, 2);  /* skip this function and traceback */
+	lua_call(L, 2, 1);  /* call debug.traceback */
+	return 1;
+}
+
 static void ctx_on_connect(
 	struct mosquitto *mosq,
 	void *obj,
@@ -513,13 +534,18 @@ static void ctx_on_connect(
 			break;
 	}
 
+	lua_pushcfunction(ctx->L, traceback);
 	lua_rawgeti(ctx->L, LUA_REGISTRYINDEX, ctx->on_connect);
 
 	lua_pushboolean(ctx->L, success);
 	lua_pushinteger(ctx->L, rc);
 	lua_pushstring(ctx->L, str);
 
-	lua_call(ctx->L, 3, 0);
+	//lua_call(ctx->L, 3, 0);
+	if (lua_pcall(ctx->L, 3, 0, -5)) {
+		fprintf(stderr, "ON_CONNECT Uncaught Error: %s\n", lua_tostring(ctx->L, -1));
+	}
+	lua_pop(ctx->L, 1);
 }
 
 
@@ -537,13 +563,18 @@ static void ctx_on_disconnect(
 		str = "unexpected disconnect";
 	}
 
+	lua_pushcfunction(ctx->L, traceback);
 	lua_rawgeti(ctx->L, LUA_REGISTRYINDEX, ctx->on_disconnect);
 
 	lua_pushboolean(ctx->L, success);
 	lua_pushinteger(ctx->L, rc);
 	lua_pushstring(ctx->L, str);
 
-	lua_call(ctx->L, 3, 0);
+	//lua_call(ctx->L, 3, 0);
+	if (lua_pcall(ctx->L, 3, 0, -5)) {
+		fprintf(stderr, "ON_DISCONNECT Uncaught Error: %s\n", lua_tostring(ctx->L, -1));
+	}
+	lua_pop(ctx->L, 1);
 }
 
 static void ctx_on_publish(
@@ -553,9 +584,14 @@ static void ctx_on_publish(
 {
 	ctx_t *ctx = obj;
 
+	lua_pushcfunction(ctx->L, traceback);
 	lua_rawgeti(ctx->L, LUA_REGISTRYINDEX, ctx->on_publish);
 	lua_pushinteger(ctx->L, mid);
-	lua_call(ctx->L, 1, 0);
+	//lua_call(ctx->L, 1, 0);
+	if (lua_pcall(ctx->L, 1, 0, -3)) {
+		fprintf(stderr, "ON_PUBLISH Uncaught Error: %s\n", lua_tostring(ctx->L, -1));
+	}
+	lua_pop(ctx->L, 1);
 }
 
 static void ctx_on_message(
@@ -565,6 +601,7 @@ static void ctx_on_message(
 {
 	ctx_t *ctx = obj;
 
+	lua_pushcfunction(ctx->L, traceback);
 	/* push registered Lua callback function onto the stack */
 	lua_rawgeti(ctx->L, LUA_REGISTRYINDEX, ctx->on_message);
 	/* push function args */
@@ -574,7 +611,11 @@ static void ctx_on_message(
 	lua_pushinteger(ctx->L, msg->qos);
 	lua_pushboolean(ctx->L, msg->retain);
 
-	lua_call(ctx->L, 5, 0); /* args: mid, topic, payload, qos, retain */
+	//lua_call(ctx->L, 5, 0); /* args: mid, topic, payload, qos, retain */
+	if (lua_pcall(ctx->L, 5, 0, -7)) {
+		fprintf(stderr, "ON_MESSAGE Uncaught Error: %s\n", lua_tostring(ctx->L, -1));
+	}
+	lua_pop(ctx->L, 1);
 }
 
 static void ctx_on_subscribe(
@@ -587,6 +628,7 @@ static void ctx_on_subscribe(
 	ctx_t *ctx = obj;
 	int i;
 
+	lua_pushcfunction(ctx->L, traceback);
 	lua_rawgeti(ctx->L, LUA_REGISTRYINDEX, ctx->on_subscribe);
 	lua_pushinteger(ctx->L, mid);
 
@@ -594,7 +636,11 @@ static void ctx_on_subscribe(
 		lua_pushinteger(ctx->L, granted_qos[i]);
 	}
 
-	lua_call(ctx->L, qos_count + 1, 0);
+	//lua_call(ctx->L, qos_count + 1, 0);
+	if (lua_pcall(ctx->L, qos_count, 0, -2 - (qos_count + 1))) {
+		fprintf(stderr, "ON_SUBSCRIBE Uncaught Error: %s\n", lua_tostring(ctx->L, -1));
+	}
+	lua_pop(ctx->L, 1);
 }
 
 static void ctx_on_unsubscribe(
@@ -604,33 +650,15 @@ static void ctx_on_unsubscribe(
 {
 	ctx_t *ctx = obj;
 
+	lua_pushcfunction(ctx->L, traceback);
 	lua_rawgeti(ctx->L, LUA_REGISTRYINDEX, ctx->on_unsubscribe);
 	lua_pushinteger(ctx->L, mid);
-	lua_call(ctx->L, 1, 0);
-}
-
-static int traceback (lua_State *L) {
-	if (!lua_isstring(L, 1))  /* 'message' not a string? */
-		return 1;  /* keep it intact */
-	lua_pushglobaltable(L);
-	lua_getfield(L, -1, "debug");
-	lua_remove(L, -2);
-	if (!lua_istable(L, -1)) {
-		lua_pop(L, 1);
-		return 1;
+	//lua_call(ctx->L, 1, 0);
+	if (lua_pcall(ctx->L, 1, 0, -3)) {
+		fprintf(stderr, "ON_UNSUBSCRIBE Uncaught Error: %s\n", lua_tostring(ctx->L, -1));
 	}
-	lua_getfield(L, -1, "traceback");
-	if (!lua_isfunction(L, -1)) {
-		lua_pop(L, 2);
-		return 1;
-	}
-	lua_pushvalue(L, 1);  /* pass error message */
-	lua_pushinteger(L, 2);  /* skip this function and traceback */
-	lua_call(L, 2, 1);  /* call debug.traceback */
-	return 1;
+	lua_pop(ctx->L, 1);
 }
-
-
 
 static void ctx_on_log(
 	struct mosquitto *mosq,
@@ -648,7 +676,7 @@ static void ctx_on_log(
 
 	//lua_call(ctx->L, 2, 0);
 	if (lua_pcall(ctx->L, 2, 0, -4)) {
-		fprintf(stderr, "Uncaught Error: %s\n", lua_tostring(ctx->L, -1));
+		fprintf(stderr, "ON_LOG Uncaught Error: %s\n", lua_tostring(ctx->L, -1));
 	}
 	lua_pop(ctx->L, 1);
 }
