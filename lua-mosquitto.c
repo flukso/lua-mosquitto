@@ -262,6 +262,15 @@ static int ctx_login_set(lua_State *L)
 	return mosq__pstatus(L, rc);
 }
 
+static int ctx_version_set(lua_State *L)
+{
+	ctx_t *ctx = ctx_check(L, 1);
+	int version = luaL_optinteger(L, 2, MQTT_PROTOCOL_V31);
+
+	int rc = mosquitto_opts_set(ctx->mosq, MOSQ_OPT_PROTOCOL_VERSION, &version);
+	return mosq__pstatus(L, rc);
+}
+
 static int ctx_tls_set(lua_State *L)
 {
 	ctx_t *ctx = ctx_check(L, 1);
@@ -781,6 +790,9 @@ static const struct define D[] = {
 	{"LOG_WEBSOCKETS", MOSQ_LOG_WEBSOCKETS},
 	{"LOG_ALL",		MOSQ_LOG_ALL},
 
+	{"PROTOCOL_V31",		MQTT_PROTOCOL_V31},
+	{"PROTOCOL_V311",		MQTT_PROTOCOL_V311},
+
 	{NULL,			0}
 };
 
@@ -823,6 +835,7 @@ static const struct luaL_Reg ctx_M[] = {
 	{"will_set",		ctx_will_set},
 	{"will_clear",		ctx_will_clear},
 	{"login_set",		ctx_login_set},
+	{"version_set",		ctx_version_set},
 	{"tls_insecure_set",	ctx_tls_insecure_set},
 	{"tls_set",		ctx_tls_set},
 	{"connect",			ctx_connect},
