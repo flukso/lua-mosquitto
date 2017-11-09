@@ -123,6 +123,21 @@ static int mosq_version(lua_State *L)
 	return 1;
 }
 
+static int mosq_topic_matches_sub(lua_State *L)
+{
+	const char *sub = luaL_checkstring(L, 1);
+	const char *topic = luaL_checkstring(L, 2);
+
+	bool result;
+	int rc = mosquitto_topic_matches_sub(sub, topic, &result);
+	if (rc != MOSQ_ERR_SUCCESS) {
+		return mosq__pstatus(L, rc);
+	} else {
+		lua_pushboolean(L, result);
+		return 1;
+	}
+}
+
 static int mosq_init(lua_State *L)
 {
 	if (!mosq_initialized)
@@ -746,6 +761,7 @@ static const struct luaL_Reg R[] = {
 	{"cleanup",	mosq_cleanup},
 	{"__gc",	mosq_cleanup},
 	{"new",		mosq_new},
+	{"topic_matches_sub",mosq_topic_matches_sub},
 	{NULL,		NULL}
 };
 
