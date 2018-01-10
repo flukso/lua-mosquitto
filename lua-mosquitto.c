@@ -350,6 +350,17 @@ static int ctx_reconnect(lua_State *L)
 	return mosq__pstatus(L, rc);
 }
 
+static int ctx_reconnect_delay_set(lua_State *L)
+{
+	ctx_t *ctx = ctx_check(L, 1);
+	int reconnect_delay = luaL_optinteger(L, 2, 1);
+	int reconnect_delay_max = luaL_optinteger(L, 3, 30);
+	bool reconnect_exponential_backoff = (lua_isboolean(L, 4) ? lua_toboolean(L, 4) : true);
+
+	int rc = mosquitto_reconnect_delay_set(ctx->mosq, reconnect_delay, reconnect_delay_max, reconnect_exponential_backoff);
+	return mosq__pstatus(L, rc);
+}
+
 static int ctx_disconnect(lua_State *L)
 {
 	ctx_t *ctx = ctx_check(L, 1);
@@ -799,6 +810,7 @@ static const struct luaL_Reg ctx_M[] = {
 	{"connect",			ctx_connect},
 	{"connect_async",	ctx_connect_async},
 	{"reconnect",		ctx_reconnect},
+	{"reconnect_delay_set",	ctx_reconnect_delay_set},
 	{"disconnect",		ctx_disconnect},
 	{"publish",			ctx_publish},
 	{"subscribe",		ctx_subscribe},
