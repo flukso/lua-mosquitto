@@ -1,0 +1,1497 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<head>
+    <title>Reference</title>
+    <link rel="stylesheet" href="ldoc.css" type="text/css" />
+</head>
+<body>
+
+<div id="container">
+
+<div id="product">
+	<div id="product_logo"></div>
+	<div id="product_name"><big><b></b></big></div>
+	<div id="product_description"></div>
+</div> <!-- id="product" -->
+
+
+<div id="main">
+
+
+<!-- Menu -->
+
+<div id="navigation">
+<br/>
+<h1>lua-mosquitto</h1>
+
+
+<h2>Contents</h2>
+<ul>
+<li><a href="#Library_functions">Library functions </a></li>
+<li><a href="#Instance_functions">Instance functions </a></li>
+</ul>
+
+
+<h2>Modules</h2>
+<ul class="nowrap">
+  <li><strong>mosquitto</strong></li>
+</ul>
+
+</div>
+
+<div id="content">
+
+<h1>Module <code>mosquitto</code></h1>
+<p>Lua bindings to libmosquitto</p>
+<p> This documentation is partial, and doesn't cover all functionality yet.</p>
+
+
+<h2><a href="#Library_functions">Library functions </a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#version">version ()</a></td>
+	<td class="summary">Return mosquitto library version.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#topic_matches_sub">topic_matches_sub (subscription, topic)</a></td>
+	<td class="summary">Does a topic match a subscription string?</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#init">init ()</a></td>
+	<td class="summary"></td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#cleanup">cleanup ()</a></td>
+	<td class="summary">Cleanup mosquitto library.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#new">new ([client=nil[, clean_session=true]])</a></td>
+	<td class="summary">Create a new mosquitto instance</td>
+	</tr>
+</table>
+<h2><a href="#Instance_functions">Instance functions </a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#destroy">destroy ()</a></td>
+	<td class="summary">Destroy context
+ This is called automatically by garbage collection, you shouldn't normally
+ have to call this.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#reinitialise">reinitialise ([client=nil[, clean=true]])</a></td>
+	<td class="summary">Reinitialise</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#will_set">will_set (topic, payload[, qos=0[, retain=false]])</a></td>
+	<td class="summary">Set a Will</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#will_clear">will_clear ()</a></td>
+	<td class="summary">Clear a will</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#login_set">login_set ([username=nil[, password=nil]])</a></td>
+	<td class="summary">Set login details</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#tls_set">tls_set ([cafile=nil[, capath=nil[, certfile=nil[, keyfile=nil]]]])</a></td>
+	<td class="summary">Set TLS details
+ This doesn't currently support callbacks for passphrase prompting!</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#tls_insecure_set">tls_insecure_set (value)</a></td>
+	<td class="summary">Set TLS insecure flags</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#tls_psk_set">tls_psk_set (psk, identity[, ciphers])</a></td>
+	<td class="summary">Set TLS PSK options</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#threaded_set">threaded_set (value)</a></td>
+	<td class="summary">Set/clear threaded flag</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#connect">connect ([host=localhost[, port=1883[, keepalive=60]]])</a></td>
+	<td class="summary">Connect to a broker</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#connect_async">connect_async ([host=localhost[, port=1883[, keepalive=60]]])</a></td>
+	<td class="summary">connect (async)</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#reconnect">reconnect ()</a></td>
+	<td class="summary"></td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#disconnect">disconnect ()</a></td>
+	<td class="summary"></td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#publish">publish (topic, payload[, qos=0[, retain=nil]])</a></td>
+	<td class="summary">Publish a message</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#subscribe">subscribe (topic[, qos=0])</a></td>
+	<td class="summary">Subscribe to a topic</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#unsubscribe">unsubscribe (topic)</a></td>
+	<td class="summary">Unsubscribe from a topic</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#loop">loop ([timeout=-1[, max_packets=1]])</a></td>
+	<td class="summary">run the loop manually</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#loop_forever">loop_forever ([timeout=-1[, max_packets=1]])</a></td>
+	<td class="summary">run the loop forever, blocking</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#loop_start">loop_start ()</a></td>
+	<td class="summary">Start a loop thread</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#loop_stop">loop_stop ()</a></td>
+	<td class="summary">Stop an existing loop thread</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#socket">socket ()</a></td>
+	<td class="summary">Get the underlying socket</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#loop_read">loop_read ([max_packets=1])</a></td>
+	<td class="summary">Handle loop read events manually</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#loop_write">loop_write ([max_packets=1])</a></td>
+	<td class="summary">Handle loop write events manually</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#loop_misc">loop_misc ()</a></td>
+	<td class="summary">Handle loop misc events manually</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#want_write">want_write ()</a></td>
+	<td class="summary">Does the library want to write?</td>
+	</tr>
+</table>
+
+<br/>
+<br/>
+
+
+    <h2 class="section-header "><a name="Library_functions"></a>Library functions </h2>
+
+    <dl class="function">
+    <dt>
+    <a name = "version"></a>
+    <strong>version ()</strong>
+    </dt>
+    <dd>
+    Return mosquitto library version.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><a class="type" href="https://www.lua.org/manual/5.3/manual.html#6.4">string</a></span>
+        version string "major.minor.revision"
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="http://mosquitto.org/api/files/mosquitto-h.html#mosquitto_lib_version">mosquitto_lib_version</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "topic_matches_sub"></a>
+    <strong>topic_matches_sub (subscription, topic)</strong>
+    </dt>
+    <dd>
+    Does a topic match a subscription string?
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">subscription</span>
+            <span class="types"><a class="type" href="https://www.lua.org/manual/5.3/manual.html#6.4">string</a></span>
+         eg, blah/+/wop/#
+        </li>
+        <li><span class="parameter">topic</span>
+            <span class="types"><a class="type" href="https://www.lua.org/manual/5.3/manual.html#6.4">string</a></span>
+         to test
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        boolean result
+    </ol>
+     <h3>Or</h3>
+    <ol>
+        <li>
+        nil</li>
+        <li>
+           <span class="types"><span class="type">number</span></span>
+        error code</li>
+        <li>
+           <span class="types"><a class="type" href="https://www.lua.org/manual/5.3/manual.html#6.4">string</a></span>
+        error description.</li>
+    </ol>
+
+    <h3>Raises:</h3>
+    For some out of memory or illegal states
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="http://mosquitto.org/api/files/mosquitto-h.html#mosquitto_topic_matches_sub">mosquitto_topic_matches_sub</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "init"></a>
+    <strong>init ()</strong>
+    </dt>
+    <dd>
+
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+        boolean true
+    </ol>
+     <h3>Or</h3>
+    <ol>
+        <li>
+        nil</li>
+        <li>
+           <span class="types"><span class="type">number</span></span>
+        error code</li>
+        <li>
+           <span class="types"><a class="type" href="https://www.lua.org/manual/5.3/manual.html#6.4">string</a></span>
+        error description.</li>
+    </ol>
+
+    <h3>Raises:</h3>
+    For some out of memory or illegal states
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="http://mosquitto.org/api/files/mosquitto-h.html#mosquitto_lib_init">mosquitto_lib_init</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "cleanup"></a>
+    <strong>cleanup ()</strong>
+    </dt>
+    <dd>
+    Cleanup mosquitto library.
+ This is called automatically by garbage collection, you shouldn't normally
+ have to call this.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+        true
+    </ol>
+     <h3>Or</h3>
+    <ol>
+        <li>
+        nil</li>
+        <li>
+           <span class="types"><span class="type">number</span></span>
+        error code</li>
+        <li>
+           <span class="types"><a class="type" href="https://www.lua.org/manual/5.3/manual.html#6.4">string</a></span>
+        error description.</li>
+    </ol>
+
+    <h3>Raises:</h3>
+    For some out of memory or illegal states
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="http://mosquitto.org/api/files/mosquitto-h.html#mosquitto_lib_cleanup">mosquitto_lib_cleanup</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "new"></a>
+    <strong>new ([client=nil[, clean_session=true]])</strong>
+    </dt>
+    <dd>
+    Create a new mosquitto instance
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">client</span>
+            <span class="types"><a class="type" href="https://www.lua.org/manual/5.3/manual.html#6.4">string</a></span>
+         id, optional. nil to allow library to generate
+         (<em>default</em> nil)
+        </li>
+        <li><span class="parameter">clean_session</span>
+            <span class="types"><span class="type">boolean</span></span>
+
+         (<em>default</em> true)
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        a mosquitto instance
+    </ol>
+
+    <h3>Raises:</h3>
+    For some out of memory or illegal states, or both nil id and clean session true
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="http://mosquitto.org/api/files/mosquitto-h.html#mosquitto_new">mosquitto_new</a>
+    </ul>
+
+
+</dd>
+</dl>
+    <h2 class="section-header "><a name="Instance_functions"></a>Instance functions </h2>
+
+    <dl class="function">
+    <dt>
+    <a name = "destroy"></a>
+    <strong>destroy ()</strong>
+    </dt>
+    <dd>
+    Destroy context
+ This is called automatically by garbage collection, you shouldn't normally
+ have to call this.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+        boolean true
+    </ol>
+     <h3>Or</h3>
+    <ol>
+        <li>
+        nil</li>
+        <li>
+           <span class="types"><span class="type">number</span></span>
+        error code</li>
+        <li>
+           <span class="types"><a class="type" href="https://www.lua.org/manual/5.3/manual.html#6.4">string</a></span>
+        error description.</li>
+    </ol>
+
+    <h3>Raises:</h3>
+    For some out of memory or illegal states
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="http://mosquitto.org/api/files/mosquitto-h.html#mosquitto_destroy">mosquitto_destroy</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "reinitialise"></a>
+    <strong>reinitialise ([client=nil[, clean=true]])</strong>
+    </dt>
+    <dd>
+    Reinitialise
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">client</span>
+            <span class="types"><a class="type" href="https://www.lua.org/manual/5.3/manual.html#6.4">string</a></span>
+         id, nil to allow the library to determine
+         (<em>default</em> nil)
+        </li>
+        <li><span class="parameter">clean</span>
+            <span class="types"><span class="type">boolean</span></span>
+         session.
+         (<em>default</em> true)
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        boolean true
+    </ol>
+     <h3>Or</h3>
+    <ol>
+        <li>
+        nil</li>
+        <li>
+           <span class="types"><span class="type">number</span></span>
+        error code</li>
+        <li>
+           <span class="types"><a class="type" href="https://www.lua.org/manual/5.3/manual.html#6.4">string</a></span>
+        error description.</li>
+    </ol>
+
+    <h3>Raises:</h3>
+    For some out of memory or illegal states
+
+    <h3>See also:</h3>
+    <ul>
+         <li><a href="http://mosquitto.org/api/files/mosquitto-h.html#mosquitto_reinitialise">mosquitto_reinitialise</a></li>
+         <li><a href="index.html#new">new</a></li>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "will_set"></a>
+    <strong>will_set (topic, payload[, qos=0[, retain=false]])</strong>
+    </dt>
+    <dd>
+    Set a Will
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">topic</span>
+            <span class="types"><a class="type" href="https://www.lua.org/manual/5.3/manual.html#6.4">string</a></span>
+         as per mosquitto_will_set
+        </li>
+        <li><span class="parameter">payload</span>
+            <span class="types"><a class="type" href="https://www.lua.org/manual/5.3/manual.html#6.4">string</a></span>
+         as per mosquitto_will_set (but a proper lua string)
+        </li>
+        <li><span class="parameter">qos</span>
+            <span class="types"><span class="type">number</span></span>
+         0, 1 or 2
+         (<em>default</em> 0)
+        </li>
+        <li><span class="parameter">retain</span>
+            <span class="types"><span class="type">boolean</span></span>
+
+         (<em>default</em> false)
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        boolean true
+    </ol>
+     <h3>Or</h3>
+    <ol>
+        <li>
+        nil</li>
+        <li>
+           <span class="types"><span class="type">number</span></span>
+        error code</li>
+        <li>
+           <span class="types"><a class="type" href="https://www.lua.org/manual/5.3/manual.html#6.4">string</a></span>
+        error description.</li>
+    </ol>
+
+    <h3>Raises:</h3>
+    For some out of memory or illegal states
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="http://mosquitto.org/api/files/mosquitto-h.html#mosquitto_will_set">mosquitto_will_set</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "will_clear"></a>
+    <strong>will_clear ()</strong>
+    </dt>
+    <dd>
+    Clear a will
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+        boolean true
+    </ol>
+     <h3>Or</h3>
+    <ol>
+        <li>
+        nil</li>
+        <li>
+           <span class="types"><span class="type">number</span></span>
+        error code</li>
+        <li>
+           <span class="types"><a class="type" href="https://www.lua.org/manual/5.3/manual.html#6.4">string</a></span>
+        error description.</li>
+    </ol>
+
+    <h3>Raises:</h3>
+    For some out of memory or illegal states
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="http://mosquitto.org/api/files/mosquitto-h.html#mosquitto_will_clear">mosquitto_will_clear</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "login_set"></a>
+    <strong>login_set ([username=nil[, password=nil]])</strong>
+    </dt>
+    <dd>
+    Set login details
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">username</span>
+            <span class="types"><a class="type" href="https://www.lua.org/manual/5.3/manual.html#6.4">string</a></span>
+         may be nil
+         (<em>default</em> nil)
+        </li>
+        <li><span class="parameter">password</span>
+            <span class="types"><a class="type" href="https://www.lua.org/manual/5.3/manual.html#6.4">string</a></span>
+         may be nil
+         (<em>default</em> nil)
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        boolean true
+    </ol>
+     <h3>Or</h3>
+    <ol>
+        <li>
+        nil</li>
+        <li>
+           <span class="types"><span class="type">number</span></span>
+        error code</li>
+        <li>
+           <span class="types"><a class="type" href="https://www.lua.org/manual/5.3/manual.html#6.4">string</a></span>
+        error description.</li>
+    </ol>
+
+    <h3>Raises:</h3>
+    For some out of memory or illegal states
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="http://mosquitto.org/api/files/mosquitto-h.html#mosquitto_username_pw_set">mosquitto_username_pw_set</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "tls_set"></a>
+    <strong>tls_set ([cafile=nil[, capath=nil[, certfile=nil[, keyfile=nil]]]])</strong>
+    </dt>
+    <dd>
+    Set TLS details
+ This doesn't currently support callbacks for passphrase prompting!
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">cafile</span>
+            <span class="types"><a class="type" href="https://www.lua.org/manual/5.3/manual.html#6.4">string</a></span>
+         may be nil
+         (<em>default</em> nil)
+        </li>
+        <li><span class="parameter">capath</span>
+            <span class="types"><a class="type" href="https://www.lua.org/manual/5.3/manual.html#6.4">string</a></span>
+         may be nil
+         (<em>default</em> nil)
+        </li>
+        <li><span class="parameter">certfile</span>
+            <span class="types"><a class="type" href="https://www.lua.org/manual/5.3/manual.html#6.4">string</a></span>
+         may be nil
+         (<em>default</em> nil)
+        </li>
+        <li><span class="parameter">keyfile</span>
+            <span class="types"><a class="type" href="https://www.lua.org/manual/5.3/manual.html#6.4">string</a></span>
+         may be nil
+         (<em>default</em> nil)
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        boolean true
+    </ol>
+     <h3>Or</h3>
+    <ol>
+        <li>
+        nil</li>
+        <li>
+           <span class="types"><span class="type">number</span></span>
+        error code</li>
+        <li>
+           <span class="types"><a class="type" href="https://www.lua.org/manual/5.3/manual.html#6.4">string</a></span>
+        error description.</li>
+    </ol>
+
+    <h3>Raises:</h3>
+    For some out of memory or illegal states
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="http://mosquitto.org/api/files/mosquitto-h.html#mosquitto_tls_set">mosquitto_tls_set</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "tls_insecure_set"></a>
+    <strong>tls_insecure_set (value)</strong>
+    </dt>
+    <dd>
+    Set TLS insecure flags
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">value</span>
+            <span class="types"><span class="type">boolean</span></span>
+         true or false
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        boolean true
+    </ol>
+     <h3>Or</h3>
+    <ol>
+        <li>
+        nil</li>
+        <li>
+           <span class="types"><span class="type">number</span></span>
+        error code</li>
+        <li>
+           <span class="types"><a class="type" href="https://www.lua.org/manual/5.3/manual.html#6.4">string</a></span>
+        error description.</li>
+    </ol>
+
+    <h3>Raises:</h3>
+    For some out of memory or illegal states
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="http://mosquitto.org/api/files/mosquitto-h.html#mosquitto_tls_insecure_set">mosquitto_tls_insecure_set</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "tls_psk_set"></a>
+    <strong>tls_psk_set (psk, identity[, ciphers])</strong>
+    </dt>
+    <dd>
+    Set TLS PSK options
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">psk</span>
+            <span class="types"><a class="type" href="https://www.lua.org/manual/5.3/manual.html#6.4">string</a></span>
+
+        </li>
+        <li><span class="parameter">identity</span>
+            <span class="types"><a class="type" href="https://www.lua.org/manual/5.3/manual.html#6.4">string</a></span>
+
+        </li>
+        <li><span class="parameter">ciphers</span>
+            <span class="types"><a class="type" href="https://www.lua.org/manual/5.3/manual.html#6.4">string</a></span>
+
+         (<em>optional</em>)
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        boolean true
+    </ol>
+     <h3>Or</h3>
+    <ol>
+        <li>
+        nil</li>
+        <li>
+           <span class="types"><span class="type">number</span></span>
+        error code</li>
+        <li>
+           <span class="types"><a class="type" href="https://www.lua.org/manual/5.3/manual.html#6.4">string</a></span>
+        error description.</li>
+    </ol>
+
+    <h3>Raises:</h3>
+    For some out of memory or illegal states
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="http://mosquitto.org/api/files/mosquitto-h.html#mosquitto_tls_psk_set">mosquitto_tls_psk_set</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "threaded_set"></a>
+    <strong>threaded_set (value)</strong>
+    </dt>
+    <dd>
+    Set/clear threaded flag
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">value</span>
+            <span class="types"><span class="type">boolean</span></span>
+         true or false
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        boolean true
+    </ol>
+     <h3>Or</h3>
+    <ol>
+        <li>
+        nil</li>
+        <li>
+           <span class="types"><span class="type">number</span></span>
+        error code</li>
+        <li>
+           <span class="types"><a class="type" href="https://www.lua.org/manual/5.3/manual.html#6.4">string</a></span>
+        error description.</li>
+    </ol>
+
+    <h3>Raises:</h3>
+    For some out of memory or illegal states
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="http://mosquitto.org/api/files/mosquitto-h.html#mosquitto_threaded_set">mosquitto_threaded_set</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "connect"></a>
+    <strong>connect ([host=localhost[, port=1883[, keepalive=60]]])</strong>
+    </dt>
+    <dd>
+    Connect to a broker
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">host</span>
+            <span class="types"><a class="type" href="https://www.lua.org/manual/5.3/manual.html#6.4">string</a></span>
+
+         (<em>default</em> localhost)
+        </li>
+        <li><span class="parameter">port</span>
+            <span class="types"><span class="type">number</span></span>
+
+         (<em>default</em> 1883)
+        </li>
+        <li><span class="parameter">keepalive</span>
+            <span class="types"><span class="type">number</span></span>
+         in seconds
+         (<em>default</em> 60)
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        boolean true
+    </ol>
+     <h3>Or</h3>
+    <ol>
+        <li>
+        nil</li>
+        <li>
+           <span class="types"><span class="type">number</span></span>
+        error code</li>
+        <li>
+           <span class="types"><a class="type" href="https://www.lua.org/manual/5.3/manual.html#6.4">string</a></span>
+        error description.</li>
+    </ol>
+
+    <h3>Raises:</h3>
+    For some out of memory or illegal states
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="http://mosquitto.org/api/files/mosquitto-h.html#mosquitto_connect">mosquitto_connect</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "connect_async"></a>
+    <strong>connect_async ([host=localhost[, port=1883[, keepalive=60]]])</strong>
+    </dt>
+    <dd>
+    connect (async)
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">host</span>
+            <span class="types"><a class="type" href="https://www.lua.org/manual/5.3/manual.html#6.4">string</a></span>
+
+         (<em>default</em> localhost)
+        </li>
+        <li><span class="parameter">port</span>
+            <span class="types"><span class="type">number</span></span>
+
+         (<em>default</em> 1883)
+        </li>
+        <li><span class="parameter">keepalive</span>
+            <span class="types"><span class="type">number</span></span>
+         in seconds
+         (<em>default</em> 60)
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        boolean true
+    </ol>
+     <h3>Or</h3>
+    <ol>
+        <li>
+        nil</li>
+        <li>
+           <span class="types"><span class="type">number</span></span>
+        error code</li>
+        <li>
+           <span class="types"><a class="type" href="https://www.lua.org/manual/5.3/manual.html#6.4">string</a></span>
+        error description.</li>
+    </ol>
+
+    <h3>Raises:</h3>
+    For some out of memory or illegal states
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="http://mosquitto.org/api/files/mosquitto-h.html#mosquitto_connect_async">mosquitto_connect_async</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "reconnect"></a>
+    <strong>reconnect ()</strong>
+    </dt>
+    <dd>
+
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+        boolean true
+    </ol>
+     <h3>Or</h3>
+    <ol>
+        <li>
+        nil</li>
+        <li>
+           <span class="types"><span class="type">number</span></span>
+        error code</li>
+        <li>
+           <span class="types"><a class="type" href="https://www.lua.org/manual/5.3/manual.html#6.4">string</a></span>
+        error description.</li>
+    </ol>
+
+    <h3>Raises:</h3>
+    For some out of memory or illegal states
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="http://mosquitto.org/api/files/mosquitto-h.html#mosquitto_reconnect">mosquitto_reconnect</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "disconnect"></a>
+    <strong>disconnect ()</strong>
+    </dt>
+    <dd>
+
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+        boolean true
+    </ol>
+     <h3>Or</h3>
+    <ol>
+        <li>
+        nil</li>
+        <li>
+           <span class="types"><span class="type">number</span></span>
+        error code</li>
+        <li>
+           <span class="types"><a class="type" href="https://www.lua.org/manual/5.3/manual.html#6.4">string</a></span>
+        error description.</li>
+    </ol>
+
+    <h3>Raises:</h3>
+    For some out of memory or illegal states
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="http://mosquitto.org/api/files/mosquitto-h.html#mosquitto_disconnect">mosquitto_disconnect</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "publish"></a>
+    <strong>publish (topic, payload[, qos=0[, retain=nil]])</strong>
+    </dt>
+    <dd>
+    Publish a message
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">topic</span>
+            <span class="types"><a class="type" href="https://www.lua.org/manual/5.3/manual.html#6.4">string</a></span>
+
+        </li>
+        <li><span class="parameter">payload</span>
+            <span class="types"><a class="type" href="https://www.lua.org/manual/5.3/manual.html#6.4">string</a></span>
+         (may be nil)
+        </li>
+        <li><span class="parameter">qos</span>
+            <span class="types"><span class="type">number</span></span>
+         0, 1 or 2
+         (<em>default</em> 0)
+        </li>
+        <li><span class="parameter">retain</span>
+            <span class="types"><span class="type">boolean</span></span>
+         flag
+         (<em>default</em> nil)
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+
+    </ol>
+     <h3>Or</h3>
+    <ol>
+
+           <span class="types"><span class="type">number</span></span>
+        MID can be used for correlation with callbacks
+    </ol>
+     <h3>Or</h3>
+    <ol>
+        <li>
+        nil</li>
+        <li>
+           <span class="types"><span class="type">number</span></span>
+        error code</li>
+        <li>
+           <span class="types"><a class="type" href="https://www.lua.org/manual/5.3/manual.html#6.4">string</a></span>
+        error description.</li>
+    </ol>
+
+    <h3>Raises:</h3>
+    For some out of memory or illegal states
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="http://mosquitto.org/api/files/mosquitto-h.html#mosquitto_publish">mosquitto_publish</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "subscribe"></a>
+    <strong>subscribe (topic[, qos=0])</strong>
+    </dt>
+    <dd>
+    Subscribe to a topic
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">topic</span>
+            <span class="types"><a class="type" href="https://www.lua.org/manual/5.3/manual.html#6.4">string</a></span>
+         eg "blah/+/json/#"
+        </li>
+        <li><span class="parameter">qos</span>
+            <span class="types"><span class="type">number</span></span>
+         0, 1 or 2
+         (<em>default</em> 0)
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">number</span></span>
+        MID can be used for correlation with callbacks
+    </ol>
+     <h3>Or</h3>
+    <ol>
+        <li>
+        nil</li>
+        <li>
+           <span class="types"><span class="type">number</span></span>
+        error code</li>
+        <li>
+           <span class="types"><a class="type" href="https://www.lua.org/manual/5.3/manual.html#6.4">string</a></span>
+        error description.</li>
+    </ol>
+
+    <h3>Raises:</h3>
+    For some out of memory or illegal states
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="http://mosquitto.org/api/files/mosquitto-h.html#mosquitto_subscribe">mosquitto_subscribe</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "unsubscribe"></a>
+    <strong>unsubscribe (topic)</strong>
+    </dt>
+    <dd>
+    Unsubscribe from a topic
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">topic</span>
+            <span class="types"><a class="type" href="https://www.lua.org/manual/5.3/manual.html#6.4">string</a></span>
+         to unsubscribe from
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        boolean true
+    </ol>
+     <h3>Or</h3>
+    <ol>
+        <li>
+        nil</li>
+        <li>
+           <span class="types"><span class="type">number</span></span>
+        error code</li>
+        <li>
+           <span class="types"><a class="type" href="https://www.lua.org/manual/5.3/manual.html#6.4">string</a></span>
+        error description.</li>
+    </ol>
+
+    <h3>Raises:</h3>
+    For some out of memory or illegal states
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="http://mosquitto.org/api/files/mosquitto-h.html#mosquitto_unsubscribe">mosquitto_unsubscribe</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "loop"></a>
+    <strong>loop ([timeout=-1[, max_packets=1]])</strong>
+    </dt>
+    <dd>
+    run the loop manually
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">timeout</span>
+            <span class="types"><span class="type">number</span></span>
+         how long in ms to wait for traffic (-1 for library default)
+         (<em>default</em> -1)
+        </li>
+        <li><span class="parameter">max_packets</span>
+            <span class="types"><span class="type">number</span></span>
+
+         (<em>default</em> 1)
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        boolean true
+    </ol>
+     <h3>Or</h3>
+    <ol>
+        <li>
+        nil</li>
+        <li>
+           <span class="types"><span class="type">number</span></span>
+        error code</li>
+        <li>
+           <span class="types"><a class="type" href="https://www.lua.org/manual/5.3/manual.html#6.4">string</a></span>
+        error description.</li>
+    </ol>
+
+    <h3>Raises:</h3>
+    For some out of memory or illegal states
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="http://mosquitto.org/api/files/mosquitto-h.html#mosquitto_loop">mosquitto_loop</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "loop_forever"></a>
+    <strong>loop_forever ([timeout=-1[, max_packets=1]])</strong>
+    </dt>
+    <dd>
+    run the loop forever, blocking
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">timeout</span>
+            <span class="types"><span class="type">number</span></span>
+         how long in ms to wait for traffic (-1 for library default)
+         (<em>default</em> -1)
+        </li>
+        <li><span class="parameter">max_packets</span>
+            <span class="types"><span class="type">number</span></span>
+
+         (<em>default</em> 1)
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        boolean true
+    </ol>
+     <h3>Or</h3>
+    <ol>
+        <li>
+        nil</li>
+        <li>
+           <span class="types"><span class="type">number</span></span>
+        error code</li>
+        <li>
+           <span class="types"><a class="type" href="https://www.lua.org/manual/5.3/manual.html#6.4">string</a></span>
+        error description.</li>
+    </ol>
+
+    <h3>Raises:</h3>
+    For some out of memory or illegal states
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="http://mosquitto.org/api/files/mosquitto-h.html#mosquitto_loop_forever">mosquitto_loop_forever</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "loop_start"></a>
+    <strong>loop_start ()</strong>
+    </dt>
+    <dd>
+    Start a loop thread
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+        boolean true
+    </ol>
+     <h3>Or</h3>
+    <ol>
+        <li>
+        nil</li>
+        <li>
+           <span class="types"><span class="type">number</span></span>
+        error code</li>
+        <li>
+           <span class="types"><a class="type" href="https://www.lua.org/manual/5.3/manual.html#6.4">string</a></span>
+        error description.</li>
+    </ol>
+
+    <h3>Raises:</h3>
+    For some out of memory or illegal states
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="http://mosquitto.org/api/files/mosquitto-h.html#mosquitto_loop_start">mosquitto_loop_start</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "loop_stop"></a>
+    <strong>loop_stop ()</strong>
+    </dt>
+    <dd>
+    Stop an existing loop thread
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+        boolean true
+    </ol>
+     <h3>Or</h3>
+    <ol>
+        <li>
+        nil</li>
+        <li>
+           <span class="types"><span class="type">number</span></span>
+        error code</li>
+        <li>
+           <span class="types"><a class="type" href="https://www.lua.org/manual/5.3/manual.html#6.4">string</a></span>
+        error description.</li>
+    </ol>
+
+    <h3>Raises:</h3>
+    For some out of memory or illegal states
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="http://mosquitto.org/api/files/mosquitto-h.html#mosquitto_loop_stop">mosquitto_loop_stop</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "socket"></a>
+    <strong>socket ()</strong>
+    </dt>
+    <dd>
+    Get the underlying socket
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">number</span></span>
+        the socket number
+    </ol>
+     <h3>Or</h3>
+    <ol>
+
+           <span class="types"><span class="type">boolean</span></span>
+        false if the socket was uninitialized
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="http://mosquitto.org/api/files/mosquitto-h.html#mosquitto_socket">mosquitto_socket</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "loop_read"></a>
+    <strong>loop_read ([max_packets=1])</strong>
+    </dt>
+    <dd>
+    Handle loop read events manually
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">max_packets</span>
+            <span class="types"><span class="type">number</span></span>
+
+         (<em>default</em> 1)
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        boolean true
+    </ol>
+     <h3>Or</h3>
+    <ol>
+        <li>
+        nil</li>
+        <li>
+           <span class="types"><span class="type">number</span></span>
+        error code</li>
+        <li>
+           <span class="types"><a class="type" href="https://www.lua.org/manual/5.3/manual.html#6.4">string</a></span>
+        error description.</li>
+    </ol>
+
+    <h3>Raises:</h3>
+    For some out of memory or illegal states
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="http://mosquitto.org/api/files/mosquitto-h.html#mosquitto_loop_read">mosquitto_loop_read</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "loop_write"></a>
+    <strong>loop_write ([max_packets=1])</strong>
+    </dt>
+    <dd>
+    Handle loop write events manually
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">max_packets</span>
+            <span class="types"><span class="type">number</span></span>
+
+         (<em>default</em> 1)
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        boolean true
+    </ol>
+     <h3>Or</h3>
+    <ol>
+        <li>
+        nil</li>
+        <li>
+           <span class="types"><span class="type">number</span></span>
+        error code</li>
+        <li>
+           <span class="types"><a class="type" href="https://www.lua.org/manual/5.3/manual.html#6.4">string</a></span>
+        error description.</li>
+    </ol>
+
+    <h3>Raises:</h3>
+    For some out of memory or illegal states
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="http://mosquitto.org/api/files/mosquitto-h.html#mosquitto_loop_write">mosquitto_loop_write</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "loop_misc"></a>
+    <strong>loop_misc ()</strong>
+    </dt>
+    <dd>
+    Handle loop misc events manually
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+        boolean true
+    </ol>
+     <h3>Or</h3>
+    <ol>
+        <li>
+        nil</li>
+        <li>
+           <span class="types"><span class="type">number</span></span>
+        error code</li>
+        <li>
+           <span class="types"><a class="type" href="https://www.lua.org/manual/5.3/manual.html#6.4">string</a></span>
+        error description.</li>
+    </ol>
+
+    <h3>Raises:</h3>
+    For some out of memory or illegal states
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="http://mosquitto.org/api/files/mosquitto-h.html#mosquitto_loop_misc">mosquitto_loop_misc</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "want_write"></a>
+    <strong>want_write ()</strong>
+    </dt>
+    <dd>
+    Does the library want to write?
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">boolean</span></span>
+        result
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="http://mosquitto.org/api/files/mosquitto-h.html#mosquitto_want_write">mosquitto_want_write</a>
+    </ul>
+
+
+</dd>
+</dl>
+
+
+</div> <!-- id="content" -->
+</div> <!-- id="main" -->
+<div id="about">
+<i>generated by <a href="http://github.com/stevedonovan/LDoc">LDoc 1.4.6</a></i>
+<i style="float:right;">Last updated 2018-01-11 14:31:10 </i>
+</div> <!-- id="about" -->
+</div> <!-- id="container" -->
+</body>
+</html>
