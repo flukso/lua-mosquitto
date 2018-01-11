@@ -39,5 +39,8 @@ install:
 	mkdir -p $(DESTDIR)$(LUA_LIBDIR)/lua/$(LUA_VERSION)
 	cp $(CMOD) $(DESTDIR)$(LUA_LIBDIR)/lua/$(LUA_VERSION)
 
+docs: $(CMOD) config.ld
+	ldoc .
+
 clean:
-	$(RM) $(CMOD) $(OBJS)
+	$(RM) -r $(CMOD) $(OBJS) docs
