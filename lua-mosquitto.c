@@ -193,7 +193,7 @@ static int mosq_new(lua_State *L)
 		return luaL_error(L, strerror(errno));
 	}
 
-	ctx->L = L;
+	ctx->L = NULL;
 	ctx__on_init(ctx);
 
 	luaL_getmetatable(L, MOSQ_META_CTX);
@@ -422,11 +422,13 @@ static int mosq_loop(lua_State *L, bool forever)
 	int timeout = luaL_optinteger(L, 2, -1);
 	int max_packets = luaL_optinteger(L, 3, 1);
 	int rc;
+	ctx->L = L;
 	if (forever) {
 		rc = mosquitto_loop_forever(ctx->mosq, timeout, max_packets);
 	} else {
 		rc = mosquitto_loop(ctx->mosq, timeout, max_packets);
 	}
+	ctx->L = NULL;
 	return mosq__pstatus(L, rc);
 }
 
@@ -443,8 +445,10 @@ static int ctx_loop_forever(lua_State *L)
 static int ctx_loop_start(lua_State *L)
 {
 	ctx_t *ctx = ctx_check(L, 1);
+	int rc;
 
-	int rc = mosquitto_loop_start(ctx->mosq);
+	ctx->L = L;
+	rc = mosquitto_loop_start(ctx->mosq);
 	return mosq__pstatus(L, rc);
 }
 
@@ -454,6 +458,7 @@ static int ctx_loop_stop(lua_State *L)
 	bool force = lua_toboolean(L, 2);
 
 	int rc = mosquitto_loop_stop(ctx->mosq, force);
+	ctx->L = NULL;
 	return mosq__pstatus(L, rc);
 }
 
@@ -478,8 +483,11 @@ static int ctx_loop_read(lua_State *L)
 {
 	ctx_t *ctx = ctx_check(L, 1);
 	int max_packets = luaL_optinteger(L, 2, 1);
+	int rc;
 
-	int rc = mosquitto_loop_read(ctx->mosq, max_packets);
+	ctx->L = L;
+	rc = mosquitto_loop_read(ctx->mosq, max_packets);
+	ctx->L = NULL;
 	return mosq__pstatus(L, rc);
 }
 
@@ -487,16 +495,22 @@ static int ctx_loop_write(lua_State *L)
 {
 	ctx_t *ctx = ctx_check(L, 1);
 	int max_packets = luaL_optinteger(L, 2, 1);
+	int rc;
 
-	int rc = mosquitto_loop_write(ctx->mosq, max_packets);
+	ctx->L = L;
+	rc = mosquitto_loop_write(ctx->mosq, max_packets);
+	ctx->L = NULL;
 	return mosq__pstatus(L, rc);
 }
 
 static int ctx_loop_misc(lua_State *L)
 {
 	ctx_t *ctx = ctx_check(L, 1);
+	int rc;
 
-	int rc = mosquitto_loop_misc(ctx->mosq);
+	ctx->L = L;
+	rc = mosquitto_loop_misc(ctx->mosq);
+	ctx->L = NULL;
 	return mosq__pstatus(L, rc);
 }
 
