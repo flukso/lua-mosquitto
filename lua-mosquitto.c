@@ -27,6 +27,13 @@
 
 */
 
+/***
+ * Lua bindings to libmosquitto
+ *
+ * This documentation is partial, and doesn't cover all functionality yet.
+ * @module mosquitto
+ */
+
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
@@ -112,6 +119,17 @@ static int mosq__pstatus(lua_State *L, int mosq_errno) {
 	return 0;
 }
 
+/***
+ * Library functions
+ * @section lib_functions
+ */
+
+/***
+ * Return mosquitto library version.
+ * @function version
+ * @treturn string version string "major.minor.revision"
+ * @see mosquitto_lib_version
+ */
 static int mosq_version(lua_State *L)
 {
 	int major, minor, rev;
@@ -123,6 +141,18 @@ static int mosq_version(lua_State *L)
 	return 1;
 }
 
+/***
+ * Does a topic match a subscription string?
+ * @function topic_matches_sub
+ * @tparam string subscription eg, blah/+/wop/#
+ * @tparam string topic to test
+ * @return[1] boolean result
+ * @return[2] nil
+ * @treturn[2] number error code
+ * @treturn[2] string error description.
+ * @raise For some out of memory or illegal states
+ * @see mosquitto_topic_matches_sub
+ */
 static int mosq_topic_matches_sub(lua_State *L)
 {
 	const char *sub = luaL_checkstring(L, 1);
@@ -138,6 +168,15 @@ static int mosq_topic_matches_sub(lua_State *L)
 	}
 }
 
+/***
+ * @function init
+ * @see mosquitto_lib_init
+ * @return[1] boolean true
+ * @return[2] nil
+ * @treturn[2] number error code
+ * @treturn[2] string error description.
+ * @raise For some out of memory or illegal states
+*/
 static int mosq_init(lua_State *L)
 {
 	if (!mosq_initialized)
@@ -146,6 +185,18 @@ static int mosq_init(lua_State *L)
 	return mosq__pstatus(L, MOSQ_ERR_SUCCESS);
 }
 
+/***
+ * Cleanup mosquitto library.
+ * This is called automatically by garbage collection, you shouldn't normally
+ * have to call this.
+ * @function cleanup
+ * @see mosquitto_lib_cleanup
+ * @return[1] true
+ * @return[2] nil
+ * @treturn[2] number error code
+ * @treturn[2] string error description.
+ * @raise For some out of memory or illegal states
+ */
 static int mosq_cleanup(lua_State *L)
 {
 	mosquitto_lib_cleanup();
@@ -175,6 +226,15 @@ static void ctx__on_clear(ctx_t *ctx)
 	luaL_unref(ctx->L, LUA_REGISTRYINDEX, ctx->on_log);
 }
 
+/***
+ * Create a new mosquitto instance
+ * @function new
+ * @tparam[opt=nil] string client id, optional. nil to allow library to generate
+ * @tparam[opt=true] boolean clean_session
+ * @return[1] a mosquitto instance
+ * @raise For some out of memory or illegal states, or both nil id and clean session true
+ * @see mosquitto_new
+ */
 static int mosq_new(lua_State *L)
 {
 	const char *id = luaL_optstring(L, 1, NULL);
@@ -207,6 +267,23 @@ static ctx_t * ctx_check(lua_State *L, int i)
 	return (ctx_t *) luaL_checkudata(L, i, MOSQ_META_CTX);
 }
 
+/***
+ * Instance functions
+ * @section instance_functions
+ */
+
+/***
+ * Destroy context
+ * This is called automatically by garbage collection, you shouldn't normally
+ * have to call this.
+ * @function destroy
+ * @see mosquitto_destroy
+ * @return[1] boolean true
+ * @return[2] nil
+ * @treturn[2] number error code
+ * @treturn[2] string error description.
+ * @raise For some out of memory or illegal states
+ */
 static int ctx_destroy(lua_State *L)
 {
 	ctx_t *ctx = ctx_check(L, 1);
@@ -222,6 +299,19 @@ static int ctx_destroy(lua_State *L)
 	return mosq__pstatus(L, MOSQ_ERR_SUCCESS);
 }
 
+/***
+ * Reinitialise
+ * @function reinitialise
+ * @tparam[opt=nil] string client id, nil to allow the library to determine
+ * @tparam[opt=true] boolean clean session.
+ * @see mosquitto_reinitialise
+ * @see new
+ * @return[1] boolean true
+ * @return[2] nil
+ * @treturn[2] number error code
+ * @treturn[2] string error description.
+ * @raise For some out of memory or illegal states
+*/
 static int ctx_reinitialise(lua_State *L)
 {
 	ctx_t *ctx = ctx_check(L, 1);
@@ -241,6 +331,20 @@ static int ctx_reinitialise(lua_State *L)
 	return mosq__pstatus(L, rc);
 }
 
+/***
+ * Set a Will
+ * @function will_set
+ * @tparam string topic as per mosquitto_will_set
+ * @tparam string payload as per mosquitto_will_set (but a proper lua string)
+ * @tparam[opt=0] number qos 0, 1 or 2
+ * @tparam[opt=false] boolean retain
+ * @see mosquitto_will_set
+ * @return[1] boolean true
+ * @return[2] nil
+ * @treturn[2] number error code
+ * @treturn[2] string error description.
+ * @raise For some out of memory or illegal states
+ */
 static int ctx_will_set(lua_State *L)
 {
 	ctx_t *ctx = ctx_check(L, 1);
@@ -259,6 +363,16 @@ static int ctx_will_set(lua_State *L)
 	return mosq__pstatus(L, rc);
 }
 
+/***
+ * Clear a will
+ * @function will_clear
+ * @see mosquitto_will_clear
+ * @return[1] boolean true
+ * @return[2] nil
+ * @treturn[2] number error code
+ * @treturn[2] string error description.
+ * @raise For some out of memory or illegal states
+ */
 static int ctx_will_clear(lua_State *L)
 {
 	ctx_t *ctx = ctx_check(L, 1);
@@ -267,6 +381,18 @@ static int ctx_will_clear(lua_State *L)
 	return mosq__pstatus(L, rc);
 }
 
+/***
+ * Set login details
+ * @function login_set
+ * @tparam[opt=nil] string username may be nil
+ * @tparam[opt=nil] string password may be nil
+ * @see mosquitto_username_pw_set
+ * @return[1] boolean true
+ * @return[2] nil
+ * @treturn[2] number error code
+ * @treturn[2] string error description.
+ * @raise For some out of memory or illegal states
+ */
 static int ctx_login_set(lua_State *L)
 {
 	ctx_t *ctx = ctx_check(L, 1);
@@ -277,6 +403,21 @@ static int ctx_login_set(lua_State *L)
 	return mosq__pstatus(L, rc);
 }
 
+/***
+ * Set TLS details
+ * This doesn't currently support callbacks for passphrase prompting!
+ * @function tls_set
+ * @tparam[opt=nil] string cafile may be nil
+ * @tparam[opt=nil] string capath may be nil
+ * @tparam[opt=nil] string certfile may be nil
+ * @tparam[opt=nil] string keyfile may be nil
+ * @see mosquitto_tls_set
+ * @return[1] boolean true
+ * @return[2] nil
+ * @treturn[2] number error code
+ * @treturn[2] string error description.
+ * @raise For some out of memory or illegal states
+ */
 static int ctx_tls_set(lua_State *L)
 {
 	ctx_t *ctx = ctx_check(L, 1);
@@ -291,6 +432,17 @@ static int ctx_tls_set(lua_State *L)
 	return mosq__pstatus(L, rc);
 }
 
+/***
+ * Set TLS insecure flags
+ * @function tls_insecure_set
+ * @tparam boolean value true or false
+ * @see mosquitto_tls_insecure_set
+ * @return[1] boolean true
+ * @return[2] nil
+ * @treturn[2] number error code
+ * @treturn[2] string error description.
+ * @raise For some out of memory or illegal states
+ */
 static int ctx_tls_insecure_set(lua_State *L)
 {
 	ctx_t *ctx = ctx_check(L, 1);
@@ -300,6 +452,19 @@ static int ctx_tls_insecure_set(lua_State *L)
 	return mosq__pstatus(L, rc);
 }
 
+/***
+ * Set TLS PSK options
+ * @function tls_psk_set
+ * @tparam string psk
+ * @tparam string identity
+ * @tparam[opt] string ciphers
+ * @see mosquitto_tls_psk_set
+ * @return[1] boolean true
+ * @return[2] nil
+ * @treturn[2] number error code
+ * @treturn[2] string error description.
+ * @raise For some out of memory or illegal states
+ */
 static int ctx_tls_psk_set(lua_State *L)
 {
 	ctx_t *ctx = ctx_check(L, 1);
@@ -311,6 +476,17 @@ static int ctx_tls_psk_set(lua_State *L)
 	return mosq__pstatus(L, rc);
 }
 
+/***
+ * Set/clear threaded flag
+ * @function threaded_set
+ * @tparam boolean value true or false
+ * @see mosquitto_threaded_set
+ * @return[1] boolean true
+ * @return[2] nil
+ * @treturn[2] number error code
+ * @treturn[2] string error description.
+ * @raise For some out of memory or illegal states
+ */
 static int ctx_threaded_set(lua_State *L)
 {
 	ctx_t *ctx = ctx_check(L, 1);
@@ -320,6 +496,19 @@ static int ctx_threaded_set(lua_State *L)
 	return mosq__pstatus(L, rc);
 }
 
+/***
+ * Connect to a broker
+ * @function connect
+ * @tparam[opt=localhost] string host
+ * @tparam[opt=1883] number port
+ * @tparam[opt=60] number keepalive in seconds
+ * @see mosquitto_connect
+ * @return[1] boolean true
+ * @return[2] nil
+ * @treturn[2] number error code
+ * @treturn[2] string error description.
+ * @raise For some out of memory or illegal states
+ */
 static int ctx_connect(lua_State *L)
 {
 	ctx_t *ctx = ctx_check(L, 1);
@@ -331,6 +520,19 @@ static int ctx_connect(lua_State *L)
 	return mosq__pstatus(L, rc);
 }
 
+/***
+ * connect (async)
+ * @function connect_async
+ * @tparam[opt=localhost] string host
+ * @tparam[opt=1883] number port
+ * @tparam[opt=60] number keepalive in seconds
+ * @see mosquitto_connect_async
+ * @return[1] boolean true
+ * @return[2] nil
+ * @treturn[2] number error code
+ * @treturn[2] string error description.
+ * @raise For some out of memory or illegal states
+ */
 static int ctx_connect_async(lua_State *L)
 {
 	ctx_t *ctx = ctx_check(L, 1);
@@ -342,6 +544,15 @@ static int ctx_connect_async(lua_State *L)
 	return mosq__pstatus(L, rc);
 }
 
+/***
+ * @function reconnect
+ * @see mosquitto_reconnect
+ * @return[1] boolean true
+ * @return[2] nil
+ * @treturn[2] number error code
+ * @treturn[2] string error description.
+ * @raise For some out of memory or illegal states
+ */
 static int ctx_reconnect(lua_State *L)
 {
 	ctx_t *ctx = ctx_check(L, 1);
@@ -350,6 +561,15 @@ static int ctx_reconnect(lua_State *L)
 	return mosq__pstatus(L, rc);
 }
 
+/***
+ * @function disconnect
+ * @see mosquitto_disconnect
+ * @return[1] boolean true
+ * @return[2] nil
+ * @treturn[2] number error code
+ * @treturn[2] string error description.
+ * @raise For some out of memory or illegal states
+ */
 static int ctx_disconnect(lua_State *L)
 {
 	ctx_t *ctx = ctx_check(L, 1);
@@ -358,6 +578,21 @@ static int ctx_disconnect(lua_State *L)
 	return mosq__pstatus(L, rc);
 }
 
+/***
+ * Publish a message
+ * @function publish
+ * @tparam string topic
+ * @tparam string payload (may be nil)
+ * @tparam[opt=0] number qos 0, 1 or 2
+ * @tparam[opt=nil] boolean retain flag
+ * @return 
+ * @see mosquitto_publish
+ * @treturn[1] number MID can be used for correlation with callbacks
+ * @return[2] nil
+ * @treturn[2] number error code
+ * @treturn[2] string error description.
+ * @raise For some out of memory or illegal states
+ */
 static int ctx_publish(lua_State *L)
 {
 	ctx_t *ctx = ctx_check(L, 1);
@@ -383,6 +618,18 @@ static int ctx_publish(lua_State *L)
 	}
 }
 
+/***
+ * Subscribe to a topic
+ * @function subscribe
+ * @tparam string topic eg "blah/+/json/#"
+ * @tparam[opt=0] number qos 0, 1 or 2
+ * @treturn[1] number MID can be used for correlation with callbacks
+ * @return[2] nil
+ * @treturn[2] number error code
+ * @treturn[2] string error description.
+ * @raise For some out of memory or illegal states
+ * @see mosquitto_subscribe
+ */
 static int ctx_subscribe(lua_State *L)
 {
 	ctx_t *ctx = ctx_check(L, 1);
@@ -400,6 +647,17 @@ static int ctx_subscribe(lua_State *L)
 	}
 }
 
+/***
+ * Unsubscribe from a topic
+ * @function unsubscribe
+ * @tparam string topic to unsubscribe from
+ * @see mosquitto_unsubscribe
+ * @return[1] boolean true
+ * @return[2] nil
+ * @treturn[2] number error code
+ * @treturn[2] string error description.
+ * @raise For some out of memory or illegal states
+ */
 static int ctx_unsubscribe(lua_State *L)
 {
 	ctx_t *ctx = ctx_check(L, 1);
@@ -430,16 +688,50 @@ static int mosq_loop(lua_State *L, bool forever)
 	return mosq__pstatus(L, rc);
 }
 
+/***
+ * run the loop manually
+ * @function loop
+ * @tparam[opt=-1] number timeout how long in ms to wait for traffic (-1 for library default)
+ * @tparam[opt=1] number max_packets
+ * @see mosquitto_loop
+ * @return[1] boolean true
+ * @return[2] nil
+ * @treturn[2] number error code
+ * @treturn[2] string error description.
+ * @raise For some out of memory or illegal states
+ */
 static int ctx_loop(lua_State *L)
 {
 	return mosq_loop(L, false);
 }
 
+/***
+ * run the loop forever, blocking
+ * @function loop_forever
+ * @tparam[opt=-1] number timeout how long in ms to wait for traffic (-1 for library default)
+ * @tparam[opt=1] number max_packets
+ * @see mosquitto_loop_forever
+ * @return[1] boolean true
+ * @return[2] nil
+ * @treturn[2] number error code
+ * @treturn[2] string error description.
+ * @raise For some out of memory or illegal states
+ */
 static int ctx_loop_forever(lua_State *L)
 {
 	return mosq_loop(L, true);
 }
 
+/***
+ * Start a loop thread
+ * @function loop_start
+ * @see mosquitto_loop_start
+ * @return[1] boolean true
+ * @return[2] nil
+ * @treturn[2] number error code
+ * @treturn[2] string error description.
+ * @raise For some out of memory or illegal states
+ */
 static int ctx_loop_start(lua_State *L)
 {
 	ctx_t *ctx = ctx_check(L, 1);
@@ -448,6 +740,16 @@ static int ctx_loop_start(lua_State *L)
 	return mosq__pstatus(L, rc);
 }
 
+/***
+ * Stop an existing loop thread
+ * @function loop_stop
+ * @see mosquitto_loop_stop
+ * @return[1] boolean true
+ * @return[2] nil
+ * @treturn[2] number error code
+ * @treturn[2] string error description.
+ * @raise For some out of memory or illegal states
+ */
 static int ctx_loop_stop(lua_State *L)
 {
 	ctx_t *ctx = ctx_check(L, 1);
@@ -457,6 +759,13 @@ static int ctx_loop_stop(lua_State *L)
 	return mosq__pstatus(L, rc);
 }
 
+/***
+ * Get the underlying socket
+ * @function socket
+ * @treturn[1] number the socket number
+ * @treturn[2] boolean false if the socket was uninitialized
+ * @see mosquitto_socket
+ */
 static int ctx_socket(lua_State *L)
 {
 	ctx_t *ctx = ctx_check(L, 1);
@@ -474,6 +783,17 @@ static int ctx_socket(lua_State *L)
 	return 1;
 }
 
+/***
+ * Handle loop read events manually
+ * @function loop_read
+ * @tparam[opt=1] number max_packets
+ * @see mosquitto_loop_read
+ * @return[1] boolean true
+ * @return[2] nil
+ * @treturn[2] number error code
+ * @treturn[2] string error description.
+ * @raise For some out of memory or illegal states
+ */
 static int ctx_loop_read(lua_State *L)
 {
 	ctx_t *ctx = ctx_check(L, 1);
@@ -483,6 +803,17 @@ static int ctx_loop_read(lua_State *L)
 	return mosq__pstatus(L, rc);
 }
 
+/***
+ * Handle loop write events manually
+ * @function loop_write
+ * @tparam[opt=1] number max_packets
+ * @see mosquitto_loop_write
+ * @return[1] boolean true
+ * @return[2] nil
+ * @treturn[2] number error code
+ * @treturn[2] string error description.
+ * @raise For some out of memory or illegal states
+ */
 static int ctx_loop_write(lua_State *L)
 {
 	ctx_t *ctx = ctx_check(L, 1);
@@ -492,6 +823,16 @@ static int ctx_loop_write(lua_State *L)
 	return mosq__pstatus(L, rc);
 }
 
+/***
+ * Handle loop misc events manually
+ * @function loop_misc
+ * @see mosquitto_loop_misc
+ * @return[1] boolean true
+ * @return[2] nil
+ * @treturn[2] number error code
+ * @treturn[2] string error description.
+ * @raise For some out of memory or illegal states
+ */
 static int ctx_loop_misc(lua_State *L)
 {
 	ctx_t *ctx = ctx_check(L, 1);
@@ -500,6 +841,12 @@ static int ctx_loop_misc(lua_State *L)
 	return mosq__pstatus(L, rc);
 }
 
+/***
+ * Does the library want to write?
+ * @function want_write
+ * @see mosquitto_want_write
+ * @treturn boolean result
+ */
 static int ctx_want_write(lua_State *L)
 {
 	ctx_t *ctx = ctx_check(L, 1);

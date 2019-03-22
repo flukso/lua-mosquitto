@@ -7,6 +7,8 @@ The parameters to all functions are as per [libmosquitto's api](http://mosquitto
 only with sensible defaults for optional values, and return values directly
 rather than via pointers.
 
+Generated API documentation for the lua functions [is also available](docs/)
+
 Compile
 -------
 You need Lua and mosquitto development packages (headers and libs) to
