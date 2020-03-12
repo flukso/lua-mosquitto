@@ -432,6 +432,56 @@ static int ctx_tls_set(lua_State *L)
 	return mosq__pstatus(L, rc);
 }
 
+struct mosq_opt_string {
+	const char *str;
+	enum mosq_opt_t tls_opt;
+};
+
+/***
+ * Enables the use of a TLS engine device.
+ * @function string_option
+ * @tparam[opt=nil] string option may be nil
+ * @tparam[opt=nil] string value may be nil
+ * @see mosquitto_string_option
+ * @return[1] boolean true
+ * @return[2] nil
+ * @treturn[2] number error code
+ * @treturn[2] string error description.
+ * @raise For some out of memory or illegal states
+ */
+static int ctx_string_option(lua_State *L)
+{
+       ctx_t *ctx = ctx_check(L, 1);
+       const char *mosq_option = luaL_optstring(L, 2, NULL);
+       const char *value = luaL_optstring(L, 3, NULL);
+       enum mosq_opt_t option;
+
+       struct mosq_opt_string options[] = {
+	       {"MOSQ_OPT_PROTOCOL_VERSION", MOSQ_OPT_PROTOCOL_VERSION},
+	       {"MOSQ_OPT_SSL_CTX", MOSQ_OPT_SSL_CTX},
+	       {"MOSQ_OPT_SSL_CTX_WITH_DEFAULTS", MOSQ_OPT_SSL_CTX_WITH_DEFAULTS},
+	       {"MOSQ_OPT_RECEIVE_MAXIMUM", MOSQ_OPT_RECEIVE_MAXIMUM},
+	       {"MOSQ_OPT_SEND_MAXIMUM", MOSQ_OPT_SEND_MAXIMUM},
+	       {"MOSQ_OPT_TLS_KEYFORM", MOSQ_OPT_TLS_KEYFORM},
+	       {"MOSQ_OPT_TLS_ENGINE", MOSQ_OPT_TLS_ENGINE},
+	       {"MOSQ_OPT_TLS_ENGINE_KPASS_SHA1", MOSQ_OPT_TLS_ENGINE_KPASS_SHA1},
+	       {"MOSQ_OPT_TLS_OCSP_REQUIRED", MOSQ_OPT_TLS_OCSP_REQUIRED},
+	       {"MOSQ_OPT_TLS_ALPN", MOSQ_OPT_TLS_ALPN}
+       };
+
+       if(mosq_option == NULL) {
+               return luaL_argerror(L, 2, "Mosquitto string option is NULL");
+       }
+
+       for(int i=MOSQ_OPT_PROTOCOL_VERSION; i <= MOSQ_OPT_TLS_ALPN; i++) {
+	       if(strcmp(options[i].str, mosq_option) == 0)
+		      option = options[i].tls_opt;
+       }
+
+       int rc = mosquitto_string_option(ctx->mosq, option, value);
+       return mosq__pstatus(L, rc);
+}
+
 /***
  * Set TLS insecure flags
  * @function tls_insecure_set
@@ -1141,6 +1191,7 @@ static const struct luaL_Reg ctx_M[] = {
 	{"login_set",		ctx_login_set},
 	{"tls_insecure_set",	ctx_tls_insecure_set},
 	{"tls_set",		ctx_tls_set},
+	{"string_option",       ctx_string_option},
 	{"tls_psk_set",		ctx_tls_psk_set},
 	{"threaded_set",	ctx_threaded_set},
 	{"connect",			ctx_connect},
