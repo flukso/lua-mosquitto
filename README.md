@@ -8,6 +8,7 @@ only with sensible defaults for optional values, and return values directly
 rather than via pointers.
 
 Generated API documentation for the lua functions [is also available](docs/)
+([Direct link if you are within github](https://flukso.github.io/lua-mosquitto/docs))
 
 Compile
 -------
