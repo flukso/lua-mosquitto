@@ -432,6 +432,46 @@ static int ctx_tls_set(lua_State *L)
 	return mosq__pstatus(L, rc);
 }
 
+static int callback_type_from_string(const char *);
+
+struct mosq_opt_string {
+	const char *str;
+	enum mosq_opt_t tls_opt;
+};
+
+/***
+ * Enables the use of a TLS engine device.
+ * @function string_option
+ * @tparam[opt=nil] string option may be nil
+ * @tparam[opt=nil] string value may be nil
+ * @see mosquitto_string_option
+ * @return[1] boolean true
+ * @return[2] nil
+ * @treturn[2] number error code
+ * @treturn[2] string error description.
+ * @raise For some out of memory or illegal states
+ */
+
+static int ctx_string_option(lua_State *L)
+{
+	ctx_t *ctx = ctx_check(L, 1);
+	const char *mosq_option = luaL_optstring(L, 2, NULL);
+	const char *value = luaL_optstring(L, 3, NULL);
+
+	if( (mosq_option == NULL) || (value == NULL) ) {
+		return luaL_argerror(L, 2, "Mosquitto string option is NULL");
+	}
+
+	int option = callback_type_from_string(mosq_option);
+
+	if( option == -1) {
+		return luaL_argerror(L, 2, "Mosquitto string option is INVALID");
+	}
+
+	int rc = mosquitto_string_option(ctx->mosq, (enum mosq_opt_t) option, value);
+	return mosq__pstatus(L, rc);
+}
+
 /***
  * Set TLS insecure flags
  * @function tls_insecure_set
@@ -1007,8 +1047,6 @@ static void ctx_on_log(
 	lua_call(ctx->L, 2, 0);
 }
 
-static int callback_type_from_string(const char *);
-
 static int ctx_callback_set(lua_State *L)
 {
 	ctx_t *ctx = ctx_check(L, 1);
@@ -1095,6 +1133,16 @@ static const struct define D[] = {
 	{"LOG_ERROR",	MOSQ_LOG_ERR},
 	{"LOG_DEBUG",	MOSQ_LOG_DEBUG},
 	{"LOG_ALL",		MOSQ_LOG_ALL},
+	
+	{"MOSQ_OPT_SSL_CTX",                   MOSQ_OPT_SSL_CTX},
+	{"MOSQ_OPT_SSL_CTX_WITH_DEFAULTS",     MOSQ_OPT_SSL_CTX_WITH_DEFAULTS},
+	{"MOSQ_OPT_RECEIVE_MAXIMUM",           MOSQ_OPT_RECEIVE_MAXIMUM},
+	{"MOSQ_OPT_SEND_MAXIMUM",              MOSQ_OPT_SEND_MAXIMUM},
+	{"MOSQ_OPT_TLS_KEYFORM",               MOSQ_OPT_TLS_KEYFORM},
+	{"MOSQ_OPT_TLS_ENGINE",                MOSQ_OPT_TLS_ENGINE},
+	{"MOSQ_OPT_TLS_ENGINE_KPASS_SHA1",     MOSQ_OPT_TLS_ENGINE_KPASS_SHA1},
+	{"MOSQ_OPT_TLS_OCSP_REQUIRED",         MOSQ_OPT_TLS_OCSP_REQUIRED},
+	{"MOSQ_OPT_TLS_ALPN",                  MOSQ_OPT_TLS_ALPN},
 
 	{NULL,			0}
 };
@@ -1103,8 +1151,9 @@ static int callback_type_from_string(const char *typestr)
 {
 	const struct define *def = D;
 	/* filter out LOG_ strings */
-	if (strstr(typestr, "ON_") != typestr)
+	if ((strstr(typestr, "ON_") != typestr) && (strstr(typestr, "MOSQ_") != typestr)) {
 		return -1;
+	}
 	while (def->name != NULL) {
 		if (strcmp(def->name, typestr) == 0)
 			return def->value;
@@ -1141,6 +1190,7 @@ static const struct luaL_Reg ctx_M[] = {
 	{"login_set",		ctx_login_set},
 	{"tls_insecure_set",	ctx_tls_insecure_set},
 	{"tls_set",		ctx_tls_set},
+	{"string_option",	ctx_string_option},
 	{"tls_psk_set",		ctx_tls_psk_set},
 	{"threaded_set",	ctx_threaded_set},
 	{"connect",			ctx_connect},
