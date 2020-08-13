@@ -455,11 +455,21 @@ struct mosq_opt_string {
 static int ctx_string_option(lua_State *L)
 {
 	ctx_t *ctx = ctx_check(L, 1);
-	const char *mosq_option = luaL_optstring(L, 2, NULL);
-	const char *value = luaL_optstring(L, 3, NULL);
+	const char *mosq_option = NULL;
+	const char *value = NULL;
 
-	if( (mosq_option == NULL) || (value == NULL) ) {
+	if (!lua_isnil(L, 2)) {
+		mosq_option = lua_tolstring(L, 2, NULL);
+        }
+	else {
 		return luaL_argerror(L, 2, "Mosquitto string option is NULL");
+	}
+
+	if (!lua_isnil(L, 3)) {
+		value = lua_tolstring(L, 3, NULL);
+        }
+	else {
+		return luaL_argerror(L, 3, "Mosquitto string value is NULL");
 	}
 
 	int option = callback_type_from_string(mosq_option);
