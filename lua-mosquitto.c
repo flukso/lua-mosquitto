@@ -497,6 +497,40 @@ static int ctx_threaded_set(lua_State *L)
 }
 
 /***
+ * Set client options, normally required before connect.
+ * This will call _string_option or _int_option automatically based on the
+ * parameters provided.
+ * @function option
+ * @tparam number option code, eg M.OPT_TLS_ALPN or M.OPT_PROTOCOL_VERSION
+ * @tparam string_or_number value the value of the option to set
+ * @see mosquitto_string_option
+ * @see mosquitto_int_option
+ * @return[1] boolean true
+ * @return[2] nil
+ * @treturn[2] number error code
+ * @treturn[2] string error description.
+ * @raise For illegal arguments
+ */
+static int ctx_option(lua_State *L)
+{
+	ctx_t *ctx = ctx_check(L, 1);
+	enum mosq_opt_t option = luaL_checkint(L, 2);
+	int type = lua_type(L, 3);
+	int rc;
+
+	if (type == LUA_TNUMBER) {
+		int val = lua_tonumber(L, 3);
+		rc = mosquitto_int_option(ctx->mosq, option, val);
+	} else if (type == LUA_TSTRING) {
+		const char *val = lua_tolstring(L, 3, NULL);
+		rc = mosquitto_string_option(ctx->mosq, option, val);
+	} else {
+		return luaL_argerror(L, 3, "values must be numeric or string");
+	}
+	return mosq__pstatus(L, rc);
+}
+
+/***
  * Connect to a broker
  * @function connect
  * @tparam[opt=localhost] string host
@@ -1096,6 +1130,21 @@ static const struct define D[] = {
 	{"LOG_DEBUG",	MOSQ_LOG_DEBUG},
 	{"LOG_ALL",		MOSQ_LOG_ALL},
 
+	{"OPT_PROTOCOL_VERSION",MOSQ_OPT_PROTOCOL_VERSION},
+	{"OPT_SSL_CTX",		MOSQ_OPT_SSL_CTX},
+	{"OPT_SSL_CTX_WITH_DEFAULTS", MOSQ_OPT_SSL_CTX_WITH_DEFAULTS},
+	{"OPT_RECEIVE_MAXIMUM",	MOSQ_OPT_RECEIVE_MAXIMUM},
+	{"OPT_SEND_MAXIMUM",	MOSQ_OPT_SEND_MAXIMUM},
+	{"OPT_TLS_KEYFORM",	MOSQ_OPT_TLS_KEYFORM},
+	{"OPT_TLS_ENGINE",	MOSQ_OPT_TLS_ENGINE},
+	{"OPT_TLS_ENGINE_KPASS_SHA1", MOSQ_OPT_TLS_ENGINE_KPASS_SHA1},
+	{"OPT_TLS_OCSP_REQUIRED", MOSQ_OPT_TLS_OCSP_REQUIRED},
+	{"OPT_TLS_ALPN",	MOSQ_OPT_TLS_ALPN},
+
+	{"MQTT_PROTOCOL_V31",	MQTT_PROTOCOL_V31},
+	{"MQTT_PROTOCOL_V311",	MQTT_PROTOCOL_V311},
+	{"MQTT_PROTOCOL_V5",	MQTT_PROTOCOL_V5},
+
 	{NULL,			0}
 };
 
@@ -1143,6 +1192,7 @@ static const struct luaL_Reg ctx_M[] = {
 	{"tls_set",		ctx_tls_set},
 	{"tls_psk_set",		ctx_tls_psk_set},
 	{"threaded_set",	ctx_threaded_set},
+	{"option",		ctx_option},
 	{"connect",			ctx_connect},
 	{"connect_async",	ctx_connect_async},
 	{"reconnect",		ctx_reconnect},
