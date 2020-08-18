@@ -1113,6 +1113,55 @@ struct define {
 	int value;
 };
 
+/***
+ * Module Constants
+ * @section mod_constants
+ */
+
+/*** Callback ids
+ * @table callback_ids
+ * @field ON_CONNECT
+ * @field ON_DISCONNECT
+ * @field ON_PUBLISH
+ * @field ON_MESSAGE
+ * @field ON_SUBSCRIBE
+ * @field ON_UNSUBSCRIBE
+ * @field ON_LOG
+ */
+
+/*** Log types
+ * @table log_types
+ * @field LOG_NONE
+ * @field LOG_INFO
+ * @field LOG_NOTICE
+ * @field LOG_WARNING
+ * @field LOG_ERROR
+ * @field LOG_DEBUG
+ * @field LOG_ALL
+ */
+
+/*** Option types
+ * @see option
+ * @table option_types
+ * @field OPT_PROTOCOL_VERSION
+ * @field OPT_SSL_CTX
+ * @field OPT_SSL_CTX_WITH_DEFAULTS
+ * @field OPT_RECEIVE_MAXIMUM
+ * @field OPT_SEND_MAXIMUM
+ * @field OPT_TLS_KEYFORM
+ * @field OPT_TLS_ENGINE
+ * @field OPT_TLS_ENGINE_KPASS_SHA1
+ * @field OPT_TLS_OCSP_REQUIRED
+ * @field OPT_TLS_ALPN
+ */
+
+/*** Option Values
+ * @see option
+ * @table option_values
+ * @field MQTT_PROTOCOL_V31
+ * @field MQTT_PROTOCOL_V311
+ * @field MQTT_PROTOCOL_V5
+ */
 static const struct define D[] = {
 	{"ON_CONNECT",		CONNECT},
 	{"ON_DISCONNECT",	DISCONNECT},
