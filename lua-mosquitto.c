@@ -529,6 +529,7 @@ static int ctx_threaded_set(lua_State *L)
  * @tparam string_or_number value the value of the option to set
  * @see mosquitto_string_option
  * @see mosquitto_int_option
+ * @see option_types
  * @return[1] boolean true
  * @return[2] nil
  * @treturn[2] number error code
