@@ -477,6 +477,30 @@ static int ctx_tls_psk_set(lua_State *L)
 }
 
 /***
+ * Set TLS options, must be called before connect.
+ * @function tls_opts_set
+ * @tparam bool cert true for SSL_VERIFY_PEER, false for SSL_VERIFY_NONE
+ * @tparam[opt=nil] string tls_version nil to use default
+ * @tparam[opt=nil] string ciphers nil to use the default set
+ * @see mosquitto_tls_opts_set
+ * @return[1] boolean true
+ * @return[2] nil
+ * @treturn[2] number error code
+ * @treturn[2] string error description.
+ * @raise For some out of memory or illegal states
+ */
+static int ctx_tls_opts_set(lua_State *L)
+{
+	ctx_t *ctx = ctx_check(L, 1);
+	const bool cert_required = lua_toboolean(L, 2);
+	const char *tls_version = luaL_optstring(L, 3, NULL);
+	const char *ciphers = luaL_optstring(L, 4, NULL);
+
+	int rc = mosquitto_tls_opts_set(ctx->mosq, cert_required ? 1 : 0, tls_version, ciphers);
+	return mosq__pstatus(L, rc);
+}
+
+/***
  * Set/clear threaded flag
  * @function threaded_set
  * @tparam boolean value true or false
@@ -1240,6 +1264,7 @@ static const struct luaL_Reg ctx_M[] = {
 	{"tls_insecure_set",	ctx_tls_insecure_set},
 	{"tls_set",		ctx_tls_set},
 	{"tls_psk_set",		ctx_tls_psk_set},
+	{"tls_opts_set",	ctx_tls_opts_set},
 	{"threaded_set",	ctx_threaded_set},
 	{"option",		ctx_option},
 	{"connect",			ctx_connect},
