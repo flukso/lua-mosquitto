@@ -621,6 +621,23 @@ static int ctx_reconnect(lua_State *L)
 }
 
 /***
+ * @function reconnect_async
+ * @see mosquitto_reconnect_async
+ * @return[1] boolean true
+ * @return[2] nil
+ * @treturn[2] number error code
+ * @treturn[2] string error description.
+ * @raise For some out of memory or illegal states
+ */
+static int ctx_reconnect_async(lua_State *L)
+{
+	ctx_t *ctx = ctx_check(L, 1);
+
+	int rc = mosquitto_reconnect_async(ctx->mosq);
+	return mosq__pstatus(L, rc);
+}
+
+/***
  * @function disconnect
  * @see mosquitto_disconnect
  * @return[1] boolean true
@@ -1271,6 +1288,7 @@ static const struct luaL_Reg ctx_M[] = {
 	{"connect",			ctx_connect},
 	{"connect_async",	ctx_connect_async},
 	{"reconnect",		ctx_reconnect},
+	{"reconnect_async",	ctx_reconnect_async},
 	{"disconnect",		ctx_disconnect},
 	{"publish",			ctx_publish},
 	{"subscribe",		ctx_subscribe},
