@@ -577,7 +577,7 @@ static int ctx_threaded_set(lua_State *L)
 static int ctx_option(lua_State *L)
 {
 	ctx_t *ctx = ctx_check(L, 1);
-	enum mosq_opt_t option = luaL_checkinteger(L, 2);
+	enum mosq_opt_t option = luaL_checkint(L, 2);
 	int type = lua_type(L, 3);
 	int rc;
 
