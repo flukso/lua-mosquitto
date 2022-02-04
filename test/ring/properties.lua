@@ -35,6 +35,10 @@ mqtt.ON_CONNECT_V5 = function(success, rc, rc_string, flags, properties)
 	mqtt:subscribe_v5("v5")
 end
 
+mqtt.ON_CONNECT = function(success, rc, rc_string)
+	print("ON_CONNECT", success, rc_string, flags) 
+end
+
 mqtt.ON_SUBSCRIBE_V5 = function(mid, properties, ...)
 	print("ON_SUBSCRIBE_V5", mid, dump(properties)) 
 
