@@ -90,6 +90,7 @@ static int mosq_initialized = 0;
 static int lua_table_on_stack(lua_State *L, int index);
 static int create_property_list_from_lua_stack(lua_State *L, int index, mosquitto_property** proplist, int command);
 static int create_lua_stack_from_property_list(lua_State *L, const mosquitto_property *properties);
+static void parse_basic_parameter_for_publish(lua_State *L, const char **topic, const void **payload, size_t *payloadlen, int *qos, bool *retain);
 
 /* handle mosquitto lib return codes */
 static int mosq__pstatus(lua_State *L, int mosq_errno) {
@@ -357,7 +358,6 @@ static int ctx_reinitialise(lua_State *L)
  * @tparam string payload as per mosquitto_will_set (but a proper lua string)
  * @tparam[opt=0] number qos 0, 1 or 2
  * @tparam[opt=false] boolean retain
- * @tparam[opt=nil] table properties
  * @see mosquitto_will_set
  * @return[1] boolean true
  * @return[2] nil
@@ -368,37 +368,55 @@ static int ctx_reinitialise(lua_State *L)
 static int ctx_will_set(lua_State *L)
 {
 	ctx_t *ctx = ctx_check(L, 1);
-	const char *topic = luaL_checkstring(L, 2);
+	const char *topic;
 	size_t payloadlen = 0;
 	const void *payload = NULL;
-	int rc;
+	int qos;
+	bool retain;
+
+	parse_basic_parameter_for_publish(L, &topic, &payload, &payloadlen, &qos, &retain);
+
+	int rc = mosquitto_will_set(ctx->mosq, topic, payloadlen, payload, qos, retain);
+	return mosq__pstatus(L, rc);
+}
+
+/***
+ * Set a Will with v5 properties
+ * @function will_set
+ * @tparam string topic as per mosquitto_will_set
+ * @tparam string payload as per mosquitto_will_set (but a proper lua string)
+ * @tparam[opt=0] number qos 0, 1 or 2
+ * @tparam[opt=false] boolean retain
+ * @tparam[opt=nil] table properties
+ * @see mosquitto_will_set
+ * @return[1] boolean true
+ * @return[2] nil
+ * @treturn[2] number error code
+ * @treturn[2] string error description.
+ * @raise For some out of memory or illegal states
+ */
+static int ctx_will_set_v5(lua_State *L)
+{
+	ctx_t *ctx = ctx_check(L, 1);
+	const char *topic;
+	size_t payloadlen = 0;
+	const void *payload = NULL;
+	int qos, rc;
+	bool retain;
 	mosquitto_property *proplist = NULL;
 
-	if (!lua_isnil(L, 3)) {
-		payload = lua_tolstring(L, 3, &payloadlen);
-	};
-
-	int qos = luaL_optinteger(L, 4, 0);
-	bool retain = lua_toboolean(L, 5);
+	parse_basic_parameter_for_publish(L, &topic, &payload, &payloadlen, &qos, &retain);
 
 	if (lua_table_on_stack(L, 6)) {
 		rc = create_property_list_from_lua_stack(L, 6, &proplist, CMD_WILL);
 		if (rc != MOSQ_ERR_SUCCESS) {
 			return mosq__pstatus(L, rc);
-		} else {
-			rc = mosquitto_will_set_v5(ctx->mosq, topic, payloadlen, payload, qos, retain, proplist);
-			mosquitto_property_free_all(&proplist);
 		}
-	} else {
-		rc = mosquitto_will_set(ctx->mosq, topic, payloadlen, payload, qos, retain);
 	}
 
+	rc = mosquitto_will_set_v5(ctx->mosq, topic, payloadlen, payload, qos, retain, proplist);
+	mosquitto_property_free_all(&proplist);
 	return mosq__pstatus(L, rc);
-}
-
-static int ctx_will_set_v5(lua_State *L)
-{
-	return ctx_will_set(L);
 }
 
 /***
@@ -618,7 +636,7 @@ static int ctx_connect(lua_State *L)
 }
 
 /***
- * Connect to a broker
+ * Connect to a broker with interface bind and v5 properties
  * @function connect
  * @tparam[opt=localhost] string host
  * @tparam[opt=1883] number port
@@ -730,7 +748,7 @@ static int ctx_disconnect(lua_State *L)
 }
 
 /***
- * @function disconnect_v5
+ * @function disconnect_v5 with v5 properties
  * @tparam int reason_code
  * @tparam[opt=nil] table properties
  * @see mosquitto_disconnect_v5
@@ -778,31 +796,14 @@ static int ctx_disconnect_v5(lua_State *L)
 static int ctx_publish(lua_State *L)
 {
 	ctx_t *ctx = ctx_check(L, 1);
-	int rc;
-	int mid;	/* message id is referenced in the publish callback */
-	const char *topic = luaL_checkstring(L, 2);
+	int mid, qos;	/* message id is referenced in the publish callback */
+	const char *topic;
 	size_t payloadlen = 0;
 	const void *payload = NULL;
-	mosquitto_property *proplist = NULL;
+	bool retain;
 
-	if (!lua_isnil(L, 3)) {
-		payload = lua_tolstring(L, 3, &payloadlen);
-	};
-
-	int qos = luaL_optinteger(L, 4, 0);
-	bool retain = lua_toboolean(L, 5);
-
-	if (lua_table_on_stack(L, 6)) {
-		rc = create_property_list_from_lua_stack(L, 6, &proplist, CMD_PUBLISH);
-		if (rc != MOSQ_ERR_SUCCESS) {
-			return mosq__pstatus(L, rc);
-		} else {
-			rc = mosquitto_publish_v5(ctx->mosq, &mid, topic, payloadlen, payload, qos, retain, proplist);
-			mosquitto_property_free_all(&proplist);		
-		}
-	} else {
-		rc = mosquitto_publish(ctx->mosq, &mid, topic, payloadlen, payload, qos, retain);
-	}
+	parse_basic_parameter_for_publish(L, &topic, &payload, &payloadlen, &qos, &retain);
+	int rc = mosquitto_publish(ctx->mosq, &mid, topic, payloadlen, payload, qos, retain);
 
 	if (rc != MOSQ_ERR_SUCCESS) {
 		return mosq__pstatus(L, rc);
@@ -813,7 +814,7 @@ static int ctx_publish(lua_State *L)
 }
 
 /***
- * Publish a message
+ * Publish a message with v5 properties 
  * @function publish_v5
  * @tparam string topic
  * @tparam string payload (may be nil)
@@ -830,7 +831,32 @@ static int ctx_publish(lua_State *L)
  */
 static int ctx_publish_v5(lua_State *L)
 {
-	return ctx_publish(L);
+	ctx_t *ctx = ctx_check(L, 1);
+	int mid, qos, rc;	/* message id is referenced in the publish callback */
+	const char *topic;
+	size_t payloadlen = 0;
+	const void *payload = NULL;
+	bool retain;
+	mosquitto_property *proplist = NULL;
+
+	parse_basic_parameter_for_publish(L, &topic, &payload, &payloadlen, &qos, &retain);
+
+	if (lua_table_on_stack(L, 6)) {
+		rc = create_property_list_from_lua_stack(L, 6, &proplist, CMD_PUBLISH);
+		if (rc != MOSQ_ERR_SUCCESS) {
+			return mosq__pstatus(L, rc);
+		}
+	}
+
+	rc = mosquitto_publish_v5(ctx->mosq, &mid, topic, payloadlen, payload, qos, retain, proplist);
+	mosquitto_property_free_all(&proplist);
+
+	if (rc != MOSQ_ERR_SUCCESS) {
+		return mosq__pstatus(L, rc);
+	} else {
+		lua_pushinteger(L, mid);
+		return 1;
+	}
 }
 
 /***
@@ -863,8 +889,8 @@ static int ctx_subscribe(lua_State *L)
 }
 
 /***
- * Subscribe to a topic
- * @function subscribe
+ * Subscribe to a topic with v5 properties
+ * @function subscribe_v5
  * @tparam string topic eg "blah/+/json/#"
  * @tparam[opt=0] number qos 0, 1 or 2
  * @tparam[opt=0] number option
@@ -909,7 +935,6 @@ static int ctx_subscribe_v5(lua_State *L)
  * Unsubscribe from a topic
  * @function unsubscribe
  * @tparam string topic to unsubscribe from
- * @tparam[opt=nil] table properties
  * @see mosquitto_unsubscribe
  * @return[1] boolean true
  * @return[2] nil
@@ -921,21 +946,9 @@ static int ctx_unsubscribe(lua_State *L)
 {
 	ctx_t *ctx = ctx_check(L, 1);
 	int mid;
-	int rc;
-	mosquitto_property *proplist = NULL;
 	const char *sub = luaL_checkstring(L, 2);
 
-	if (lua_table_on_stack(L, 3)) {
-		rc = create_property_list_from_lua_stack(L, 3, &proplist, CMD_UNSUBSCRIBE);
-		if (rc != MOSQ_ERR_SUCCESS) {
-			return mosq__pstatus(L, rc);
-		} else {
-			rc = mosquitto_unsubscribe_v5(ctx->mosq, &mid, sub, proplist);
-			mosquitto_property_free_all(&proplist);	
-		}	
-	} else {
-		rc = mosquitto_unsubscribe(ctx->mosq, &mid, sub);
-	}
+	int rc = mosquitto_unsubscribe(ctx->mosq, &mid, sub);
 
 	if (rc != MOSQ_ERR_SUCCESS) {
 		return mosq__pstatus(L, rc);
@@ -946,7 +959,7 @@ static int ctx_unsubscribe(lua_State *L)
 }
 
 /***
- * Unsubscribe from a topic
+ * Unsubscribe from a topic with v5 properties
  * @function unsubscribe_v5
  * @tparam string topic to unsubscribe from
  * @tparam[opt=nil] table properties
@@ -958,7 +971,26 @@ static int ctx_unsubscribe(lua_State *L)
  * @raise For some out of memory or illegal states
  */
 static int ctx_unsubscribe_v5(lua_State *L){
-	return ctx_unsubscribe(L);
+	ctx_t *ctx = ctx_check(L, 1);
+	int mid, rc;
+	mosquitto_property *proplist = NULL;
+	const char *sub = luaL_checkstring(L, 2);
+
+	if (lua_table_on_stack(L, 3)) {
+		rc = create_property_list_from_lua_stack(L, 3, &proplist, CMD_UNSUBSCRIBE);
+		if (rc != MOSQ_ERR_SUCCESS) {
+			return mosq__pstatus(L, rc);
+		}
+	}
+
+	rc = mosquitto_unsubscribe_v5(ctx->mosq, &mid, sub, proplist);
+	mosquitto_property_free_all(&proplist);	
+	if (rc != MOSQ_ERR_SUCCESS) {
+		return mosq__pstatus(L, rc);
+	} else {
+		lua_pushinteger(L, mid);
+		return 1;
+	}
 }
 
 static int mosq_loop(lua_State *L, bool forever)
@@ -1850,6 +1882,18 @@ static void mosq_register_defs(lua_State *L, const struct define *D)
 		lua_setfield(L, -2, D->name);
 		D++;
 	}
+}
+
+static void parse_basic_parameter_for_publish(lua_State *L, const char **topic, const void **payload, size_t *payloadlen, int *qos, bool *retain)
+{
+	*topic = luaL_checkstring(L, 2);
+
+	if (!lua_isnil(L, 3)) {
+		*payload = lua_tolstring(L, 3, payloadlen);
+	};
+
+	*qos = luaL_optinteger(L, 4, 0);
+	*retain = lua_toboolean(L, 5);
 }
 
 static const struct luaL_Reg R[] = {
