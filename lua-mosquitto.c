@@ -34,7 +34,6 @@
  * @module mosquitto
  */
 
-#include <stdio.h>
 #include <string.h>
 #include <errno.h>
 #include <assert.h>
@@ -132,11 +131,9 @@ static inline int mosq__pstatus(lua_State *L, int mosq_errno) {
 static int mosq_version(lua_State *L)
 {
 	int major, minor, rev;
-	char version[16];
 
 	mosquitto_lib_version(&major, &minor, &rev);
-	sprintf(version, "%i.%i.%i", major, minor, rev);
-	lua_pushstring(L, version);
+	lua_pushfstring(L, "%d.%d.%d", major, minor, rev);
 	return 1;
 }
 
