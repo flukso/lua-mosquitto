@@ -44,28 +44,39 @@
 #include <lauxlib.h>
 
 #include <mosquitto.h>
+#if LIBMOSQUITTO_MAJOR >= 2
+#include <mqtt_protocol.h>
+#else
+
+/* Message types */
+#define CMD_CONNECT 0x10U
+#define CMD_PUBLISH 0x30U
+#define CMD_SUBSCRIBE 0x80U
+#define CMD_UNSUBSCRIBE 0xA0U
+#define CMD_DISCONNECT 0xE0U
+
+enum mqtt311_connack_codes {
+	CONNACK_ACCEPTED = 0,
+	CONNACK_REFUSED_PROTOCOL_VERSION = 1,
+	CONNACK_REFUSED_IDENTIFIER_REJECTED = 2,
+	CONNACK_REFUSED_SERVER_UNAVAILABLE = 3,
+	CONNACK_REFUSED_BAD_USERNAME_PASSWORD = 4,
+	CONNACK_REFUSED_NOT_AUTHORIZED = 5,
+};
+
+#endif
 
 #include "compat.h"
 
 /* re-using mqtt3 message types as callback types */
-#define CONNECT		0x10
-#define PUBLISH		0x30
-#define SUBSCRIBE	0x80
-#define UNSUBSCRIBE	0xA0
-#define DISCONNECT	0xE0
+#define CONNECT		CMD_CONNECT
+#define PUBLISH		CMD_PUBLISH
+#define SUBSCRIBE	CMD_SUBSCRIBE
+#define UNSUBSCRIBE	CMD_UNSUBSCRIBE
+#define DISCONNECT	CMD_DISCONNECT
 /* add two extra callback types */
 #define MESSAGE		0x01
 #define LOG			0x02
-
-enum connect_return_codes {
-	CONN_ACCEPT,
-	CONN_REF_BAD_PROTOCOL,
-	CONN_REF_BAD_ID,
-	CONN_REF_SERVER_NOAVAIL,
-	CONN_REF_BAD_LOGIN,
-	CONN_REF_NO_AUTH,
-	CONN_REF_BAD_TLS
-};
 
 /* unique naming for userdata metatables */
 #define MOSQ_META_CTX	"mosquitto.ctx"
@@ -941,32 +952,32 @@ static void ctx_on_connect(
 	char *str = "reserved for future use";
 
 	switch(rc) {
-		case CONN_ACCEPT:
+		case CONNACK_ACCEPTED:
 			success = true;
 			str = "connection accepted";
 			break;
 
-		case CONN_REF_BAD_PROTOCOL:
+		case CONNACK_REFUSED_PROTOCOL_VERSION:
 			str = "connection refused - incorrect protocol version";
 			break;
 
-		case CONN_REF_BAD_ID:
+		case CONNACK_REFUSED_IDENTIFIER_REJECTED:
 			str = "connection refused - invalid client identifier";
 			break;
 
-		case CONN_REF_SERVER_NOAVAIL:
+		case CONNACK_REFUSED_SERVER_UNAVAILABLE:
 			str = "connection refused - server unavailable";
 			break;
 
-		case CONN_REF_BAD_LOGIN:
+		case CONNACK_REFUSED_BAD_USERNAME_PASSWORD:
 			str = "connection refused - bad username or password";
 			break;
 
-		case CONN_REF_NO_AUTH:
+		case CONNACK_REFUSED_NOT_AUTHORIZED:
 			str = "connection refused - not authorised";
 			break;
 
-		case CONN_REF_BAD_TLS:
+		case 6:
 			str = "connection refused - TLS error";
 			break;
 	}
