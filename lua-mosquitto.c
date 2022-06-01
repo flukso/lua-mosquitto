@@ -36,7 +36,6 @@
 
 #include <string.h>
 #include <errno.h>
-#include <assert.h>
 
 #include <lua.h>
 #include <lauxlib.h>
