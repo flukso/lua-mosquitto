@@ -34,13 +34,10 @@
  * @module mosquitto
  */
 
-#include <stdio.h>
 #include <string.h>
 #include <errno.h>
-#include <assert.h>
 
 #include <lua.h>
-#include <lualib.h>
 #include <lauxlib.h>
 
 #include <mosquitto.h>
@@ -85,7 +82,7 @@ typedef struct {
 static int mosq_initialized = 0;
 
 /* handle mosquitto lib return codes */
-static int mosq__pstatus(lua_State *L, int mosq_errno) {
+static inline int mosq__pstatus(lua_State *L, int mosq_errno) {
 	switch (mosq_errno) {
 		case MOSQ_ERR_SUCCESS:
 			lua_pushboolean(L, true);
@@ -133,11 +130,9 @@ static int mosq__pstatus(lua_State *L, int mosq_errno) {
 static int mosq_version(lua_State *L)
 {
 	int major, minor, rev;
-	char version[16];
 
 	mosquitto_lib_version(&major, &minor, &rev);
-	sprintf(version, "%i.%i.%i", major, minor, rev);
-	lua_pushstring(L, version);
+	lua_pushfstring(L, "%d.%d.%d", major, minor, rev);
 	return 1;
 }
 
@@ -204,7 +199,7 @@ static int mosq_cleanup(lua_State *L)
 	return mosq__pstatus(L, MOSQ_ERR_SUCCESS);
 }
 
-static void ctx__on_init(ctx_t *ctx)
+static inline void ctx__on_init(ctx_t *ctx)
 {
 	ctx->on_connect = LUA_REFNIL;
 	ctx->on_disconnect = LUA_REFNIL;
@@ -215,7 +210,7 @@ static void ctx__on_init(ctx_t *ctx)
 	ctx->on_log = LUA_REFNIL;
 }
 
-static void ctx__on_clear(ctx_t *ctx)
+static inline void ctx__on_clear(ctx_t *ctx)
 {
 	luaL_unref(ctx->L, LUA_REGISTRYINDEX, ctx->on_connect);
 	luaL_unref(ctx->L, LUA_REGISTRYINDEX, ctx->on_disconnect);
@@ -262,7 +257,7 @@ static int mosq_new(lua_State *L)
 	return 1;
 }
 
-static ctx_t * ctx_check(lua_State *L, int i)
+static inline ctx_t * ctx_check(lua_State *L, int i)
 {
 	return (ctx_t *) luaL_checkudata(L, i, MOSQ_META_CTX);
 }
@@ -539,7 +534,7 @@ static int ctx_threaded_set(lua_State *L)
 static int ctx_option(lua_State *L)
 {
 	ctx_t *ctx = ctx_check(L, 1);
-	enum mosq_opt_t option = luaL_checkint(L, 2);
+	enum mosq_opt_t option = luaL_checkinteger(L, 2);
 	int type = lua_type(L, 3);
 	int rc;
 
@@ -750,7 +745,7 @@ static int ctx_unsubscribe(lua_State *L)
 	}
 }
 
-static int mosq_loop(lua_State *L, bool forever)
+static inline int mosq_loop(lua_State *L, bool forever)
 {
 	ctx_t *ctx = ctx_check(L, 1);
 	int timeout = luaL_optinteger(L, 2, -1);
@@ -1253,7 +1248,7 @@ static int callback_type_from_string(const char *typestr)
 	return -1;
 }
 
-static void mosq_register_defs(lua_State *L, const struct define *D)
+static inline void mosq_register_defs(lua_State *L, const struct define *D)
 {
 	while (D->name != NULL) {
 		lua_pushinteger(L, D->value);
