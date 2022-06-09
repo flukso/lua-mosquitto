@@ -63,8 +63,7 @@ enum connect_return_codes {
 	CONN_REF_BAD_ID,
 	CONN_REF_SERVER_NOAVAIL,
 	CONN_REF_BAD_LOGIN,
-	CONN_REF_NO_AUTH,
-	CONN_REF_BAD_TLS
+	CONN_REF_NO_AUTH
 };
 
 /* unique naming for userdata metatables */
@@ -964,10 +963,6 @@ static void ctx_on_connect(
 
 		case CONN_REF_NO_AUTH:
 			str = "connection refused - not authorised";
-			break;
-
-		case CONN_REF_BAD_TLS:
-			str = "connection refused - TLS error";
 			break;
 	}
 
