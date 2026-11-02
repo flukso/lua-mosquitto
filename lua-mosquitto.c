@@ -169,6 +169,38 @@ static int mosq_topic_matches_sub(lua_State *L)
 }
 
 /***
+ * Is a pattern valid for subscription
+ * @function sub_topic_check
+ * @tparam string subscription eg, blah/+/wop/#
+ * @return[1] boolean result
+ * @see mosquitto_sub_topic_check
+ */
+static int mosq_sub_topic_check(lua_State *L)
+{
+	size_t len;
+	const char *topic = lua_tolstring(L, 1, &len);
+	int rc = mosquitto_sub_topic_check2(topic, len);
+	lua_pushboolean(L, rc == MOSQ_ERR_SUCCESS);
+	return 1;
+}
+
+/***
+ * Is a pattern valid for publishing
+ * @function pub_topic_check
+ * @tparam string topic eg, blah/blub/wop
+ * @return[1] boolean result
+ * @see mosquitto_pub_topic_check
+ */
+static int mosq_pub_topic_check(lua_State *L)
+{
+	size_t len;
+	const char *topic = lua_tolstring(L, 1, &len);
+	int rc = mosquitto_pub_topic_check2(topic, len);
+	lua_pushboolean(L, rc == MOSQ_ERR_SUCCESS);
+	return 1;
+}
+
+/***
  * @function init
  * @see mosquitto_lib_init
  * @return[1] boolean true
@@ -1269,6 +1301,8 @@ static const struct luaL_Reg R[] = {
 	{"__gc",	mosq_cleanup},
 	{"new",		mosq_new},
 	{"topic_matches_sub",mosq_topic_matches_sub},
+	{"sub_topic_check",mosq_sub_topic_check},
+	{"pub_topic_check",mosq_pub_topic_check},
 	{NULL,		NULL}
 };
 
