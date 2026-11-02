@@ -38,6 +38,7 @@
 #include <string.h>
 #include <errno.h>
 #include <assert.h>
+#include <signal.h>
 
 #include <lua.h>
 #include <lualib.h>
@@ -183,6 +184,37 @@ static int mosq_init(lua_State *L)
 		mosquitto_lib_init();
 
 	return mosq__pstatus(L, MOSQ_ERR_SUCCESS);
+}
+
+/***
+ * Ignore SIGPIPE for the whole process.
+ * Writing to a socket that is closed by the peer raises SIGPIPE, which by
+ * default terminates the process. libmosquitto does not protect against
+ * this in all cases, for example when OpenSSL writes during a TLS shutdown.
+ * The mosquitto_pub and mosquitto_sub clients ignore SIGPIPE for this reason.
+ *
+ * This changes the signal disposition for the whole process, so it is not
+ * done automatically.
+ * @function ignore_sigpipe
+ * @treturn boolean true if SIGPIPE was already ignored
+ * @raise if the signal disposition could not be changed
+ */
+static int mosq_ignore_sigpipe(lua_State *L)
+{
+#ifdef SIGPIPE
+	struct sigaction sa, old;
+
+	memset(&sa, 0, sizeof(sa));
+	sa.sa_handler = SIG_IGN;
+	sigemptyset(&sa.sa_mask);
+	if (sigaction(SIGPIPE, &sa, &old) != 0)
+		return luaL_error(L, "sigaction: %s", strerror(errno));
+	lua_pushboolean(L, old.sa_handler == SIG_IGN);
+#else
+	/* no SIGPIPE on this platform */
+	lua_pushboolean(L, 1);
+#endif
+	return 1;
 }
 
 /***
@@ -1266,6 +1298,7 @@ static const struct luaL_Reg R[] = {
 	{"version",	mosq_version},
 	{"init",	mosq_init},
 	{"cleanup",	mosq_cleanup},
+	{"ignore_sigpipe",	mosq_ignore_sigpipe},
 	{"__gc",	mosq_cleanup},
 	{"new",		mosq_new},
 	{"topic_matches_sub",mosq_topic_matches_sub},
