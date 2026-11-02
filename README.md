@@ -72,3 +72,28 @@ client:connect(broker)
 client:loop_forever()
 ```
 
+
+SIGPIPE
+-------
+
+Writing to a socket that was closed by the other end raises `SIGPIPE`,
+which terminates the process by default. libmosquitto does not protect
+against this in all cases. For example, with TLS a client can get killed
+right after a clean disconnect. The `mosquitto_pub` and `mosquitto_sub`
+command line clients ignore `SIGPIPE` for this reason.
+
+Call `ignore_sigpipe()` to do the same. It changes the signal handling
+for the whole process, and an ignored signal stays ignored in child
+processes started afterwards. So it is not done automatically when the
+module is loaded, and `restore_sigpipe()` puts back what was there
+before:
+
+```Lua
+mqtt = require("mosquitto")
+mqtt.ignore_sigpipe()
+-- connect, publish, disconnect...
+mqtt.restore_sigpipe()
+```
+
+Calls nest: the previous signal handling is restored once
+`restore_sigpipe()` has been called as many times as `ignore_sigpipe()`.
