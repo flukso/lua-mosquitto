@@ -90,6 +90,25 @@ loop with `socket()`, `want_write()`, `loop_read()`, `loop_write()` and
 like Lua Lanes: run the loop in the thread that owns the client.
 
 
+SIGPIPE
+-------
+
+Writing to a socket that was closed by the other end raises `SIGPIPE`,
+which terminates the process by default. libmosquitto does not protect
+against this in all cases. For example, with TLS a client can get killed
+right after a clean disconnect. The `mosquitto_pub` and `mosquitto_sub`
+command line clients ignore `SIGPIPE` for this reason.
+
+Call `ignore_sigpipe()` to do the same. It changes the signal handling
+for the whole process, so it is not done automatically when the module
+is loaded:
+
+```Lua
+mqtt = require("mosquitto")
+mqtt.ignore_sigpipe()
+```
+
+
 Testing
 -------
 The tests need [busted](https://lunarmodules.github.io/busted/),
