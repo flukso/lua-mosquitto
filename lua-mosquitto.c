@@ -186,6 +186,13 @@ static int mosq_init(lua_State *L)
 	return mosq__pstatus(L, MOSQ_ERR_SUCCESS);
 }
 
+#ifdef SIGPIPE
+/* SIGPIPE disposition before the first ignore_sigpipe() call, and the
+ * number of ignore_sigpipe() calls not yet matched by restore_sigpipe() */
+static struct sigaction saved_sigpipe;
+static int sigpipe_depth = 0;
+#endif
+
 /***
  * Ignore SIGPIPE for the whole process.
  * Writing to a socket that is closed by the peer raises SIGPIPE, which by
@@ -193,11 +200,16 @@ static int mosq_init(lua_State *L)
  * this in all cases, for example when OpenSSL writes during a TLS shutdown.
  * The mosquitto_pub and mosquitto_sub clients ignore SIGPIPE for this reason.
  *
- * This changes the signal disposition for the whole process, so it is not
- * done automatically.
+ * This changes the signal disposition for the whole process, and an ignored
+ * signal stays ignored in child processes started with exec. It is therefore
+ * not done automatically. Call restore_sigpipe() when done.
+ *
+ * Calls nest: the previous disposition is saved by the first call and put
+ * back when restore_sigpipe() has been called as many times.
  * @function ignore_sigpipe
  * @treturn boolean true if SIGPIPE was already ignored
  * @raise if the signal disposition could not be changed
+ * @see restore_sigpipe
  */
 static int mosq_ignore_sigpipe(lua_State *L)
 {
@@ -209,10 +221,39 @@ static int mosq_ignore_sigpipe(lua_State *L)
 	sigemptyset(&sa.sa_mask);
 	if (sigaction(SIGPIPE, &sa, &old) != 0)
 		return luaL_error(L, "sigaction: %s", strerror(errno));
+	if (sigpipe_depth++ == 0)
+		saved_sigpipe = old;
 	lua_pushboolean(L, old.sa_handler == SIG_IGN);
 #else
 	/* no SIGPIPE on this platform */
 	lua_pushboolean(L, 1);
+#endif
+	return 1;
+}
+
+/***
+ * Undo ignore_sigpipe().
+ * Restores the SIGPIPE disposition that was in effect before the first
+ * ignore_sigpipe() call, once it has been called as many times as
+ * ignore_sigpipe().
+ * @function restore_sigpipe
+ * @treturn boolean true if the previous disposition was restored, false
+ * if there are still unmatched ignore_sigpipe() calls or none at all
+ * @raise if the signal disposition could not be changed
+ * @see ignore_sigpipe
+ */
+static int mosq_restore_sigpipe(lua_State *L)
+{
+#ifdef SIGPIPE
+	if (sigpipe_depth == 0 || --sigpipe_depth > 0) {
+		lua_pushboolean(L, 0);
+		return 1;
+	}
+	if (sigaction(SIGPIPE, &saved_sigpipe, NULL) != 0)
+		return luaL_error(L, "sigaction: %s", strerror(errno));
+	lua_pushboolean(L, 1);
+#else
+	lua_pushboolean(L, 0);
 #endif
 	return 1;
 }
@@ -1299,6 +1340,7 @@ static const struct luaL_Reg R[] = {
 	{"init",	mosq_init},
 	{"cleanup",	mosq_cleanup},
 	{"ignore_sigpipe",	mosq_ignore_sigpipe},
+	{"restore_sigpipe",	mosq_restore_sigpipe},
 	{"__gc",	mosq_cleanup},
 	{"new",		mosq_new},
 	{"topic_matches_sub",mosq_topic_matches_sub},
