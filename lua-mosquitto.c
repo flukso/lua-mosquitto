@@ -114,6 +114,13 @@ static int mosq__pstatus(lua_State *L, int mosq_errno) {
 			lua_pushstring(L, strerror(errno));
 			return 3;
 			break;
+
+		default:
+			lua_pushnil(L);
+			lua_pushinteger(L, mosq_errno);
+			lua_pushstring(L, mosquitto_strerror(mosq_errno));
+			return 3;
+			break;
 	}
 
 	return 0;
