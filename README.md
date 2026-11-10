@@ -73,6 +73,49 @@ client:loop_forever()
 ```
 
 
+Callbacks
+---------
+
+Callbacks are called from the client method that calls into libmosquitto,
+usually `loop()`, and run in the same coroutine. An error in a callback
+is raised from that method once libmosquitto has returned.
+
+With `loop_start()`, libmosquitto runs the network loop in its own thread
+and calls the callbacks from there. A Lua state must not be used by two
+threads at the same time, so this is only safe if no other Lua code runs
+in the same Lua state meanwhile, which is rarely the case. Use `loop()`
+or `loop_forever()` instead, or integrate the client in your own event
+loop with `socket()`, `want_write()`, `loop_read()`, `loop_write()` and
+`loop_misc()`. This also applies to Lua threads in separate Lua states,
+like Lua Lanes: run the loop in the thread that owns the client.
+
+
+SIGPIPE
+-------
+
+Writing to a socket that was closed by the other end raises `SIGPIPE`,
+which terminates the process by default. libmosquitto does not protect
+against this in all cases. For example, with TLS a client can get killed
+right after a clean disconnect. The `mosquitto_pub` and `mosquitto_sub`
+command line clients ignore `SIGPIPE` for this reason.
+
+Call `ignore_sigpipe()` to do the same. It changes the signal handling
+for the whole process, and an ignored signal stays ignored in child
+processes started afterwards. So it is not done automatically when the
+module is loaded, and `restore_sigpipe()` puts back what was there
+before:
+
+```Lua
+mqtt = require("mosquitto")
+mqtt.ignore_sigpipe()
+-- connect, publish, disconnect...
+mqtt.restore_sigpipe()
+```
+
+Calls nest: the previous signal handling is restored once
+`restore_sigpipe()` has been called as many times as `ignore_sigpipe()`.
+
+
 Testing
 -------
 The tests need [busted](https://lunarmodules.github.io/busted/),

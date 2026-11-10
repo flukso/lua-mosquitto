@@ -238,6 +238,196 @@ describe("mosquitto", function()
 			assert.is_nil(first)
 		end)
 
+		it("ON_LOG is called from connect and publish", function()
+			local c = new()
+			local logs = 0
+			c.ON_LOG = function()
+				logs = logs + 1
+			end
+			assert.is_true(c:connect(HOST, broker.port))
+			assert.is_true(logs > 0)
+			logs = 0
+			assert.is_number(c:publish("log", "x"))
+			assert.is_true(logs > 0)
+		end)
+
+		it("run in the coroutine that calls loop", function()
+			local c = new()
+			local co
+			c.ON_CONNECT = function()
+				co = coroutine.running()
+			end
+			assert.is_true(c:connect(HOST, broker.port))
+			local loop_co = coroutine.create(function()
+				assert.is_true(wait_for(c, function()
+					return co
+				end))
+			end)
+			assert.is_true(coroutine.resume(loop_co))
+			assert.equal(loop_co, co)
+		end)
+
+		it("work after the coroutine that created the client is dead", function()
+			local c
+			local creator = coroutine.create(function()
+				c = new()
+				error("die")
+			end)
+			assert.is_false(coroutine.resume(creator))
+			assert.equal("dead", coroutine.status(creator))
+			creator = nil
+			collectgarbage()
+			collectgarbage()
+
+			local connected
+			c.ON_CONNECT = function()
+				connected = true
+			end
+			assert.is_true(c:connect(HOST, broker.port))
+			assert.is_true(wait_for(c, function()
+				return connected
+			end))
+		end)
+
+		it("errors are raised from loop", function()
+			local c = new()
+			c.ON_CONNECT = function()
+				error("error in ON_CONNECT")
+			end
+			assert.is_true(c:connect(HOST, broker.port))
+			assert.has_error(function()
+				wait_for(c, function()
+					return false
+				end)
+			end, "error in ON_CONNECT")
+		end)
+
+		it("errors keep their value", function()
+			local c = new()
+			local err = { "error object" }
+			c.ON_LOG = function()
+				error(err)
+			end
+			local ok, got = pcall(c.connect, c, HOST, broker.port)
+			assert.is_false(ok)
+			assert.equal(err, got)
+		end)
+
+		it("an error does not disturb message delivery", function()
+			local c = connected()
+			subscribe(c, "cberr", 1)
+			local state = { msgs = {} }
+			c.ON_MESSAGE = function(_, _, payload)
+				state.msgs[#state.msgs + 1] = { payload = payload }
+				if #state.msgs == 1 then
+					error("error in ON_MESSAGE")
+				end
+			end
+			c:publish("cberr", "1", 1)
+			c:publish("cberr", "2", 1)
+			local errors = 0
+			local deadline = helper.now() + 2
+			while #state.msgs < 2 and helper.now() < deadline do
+				local ok, err = pcall(c.loop, c, 10)
+				if not ok then
+					errors = errors + 1
+					assert.matches("error in ON_MESSAGE", err)
+				end
+			end
+			spin(c, 100)
+			assert.equal(1, errors)
+			assert.same({ "1", "2" }, { state.msgs[1].payload, state.msgs[2] and state.msgs[2].payload })
+			assert.equal(2, #state.msgs)
+		end)
+
+		describe("errors from", function()
+			-- call trigger(), then run the loop until a call raises
+			-- an error. Returns the error.
+			local function raised(c, trigger)
+				local ok, err = pcall(trigger)
+				if not ok then
+					return err
+				end
+				local deadline = helper.now() + 2
+				while helper.now() < deadline do
+					ok, err = pcall(c.loop, c, 10)
+					if not ok then
+						return err
+					end
+				end
+			end
+
+			-- callback name, client setup, and the call that triggers it
+			for _, case in ipairs({
+				{ "ON_CONNECT", new, function(c)
+					return c:connect(HOST, broker.port)
+				end },
+				{ "ON_DISCONNECT", connected, function(c)
+					return c:disconnect()
+				end },
+				{ "ON_PUBLISH", connected, function(c)
+					return c:publish("cberr/publish", "x", 1)
+				end },
+				{ "ON_MESSAGE", function()
+					local c = connected()
+					subscribe(c, "cberr/message", 1)
+					return c
+				end, function(c)
+					return c:publish("cberr/message", "x", 1)
+				end },
+				{ "ON_SUBSCRIBE", connected, function(c)
+					return c:subscribe("cberr/subscribe", 1)
+				end },
+				{ "ON_UNSUBSCRIBE", connected, function(c)
+					return c:unsubscribe("cberr/unsubscribe")
+				end },
+				{ "ON_LOG", new, function(c)
+					return c:connect(HOST, broker.port)
+				end },
+			}) do
+				local name, setup, trigger = case[1], case[2], case[3]
+				it(name .. " are raised", function()
+					local c = setup()
+					c[name] = function()
+						error("error in " .. name)
+					end
+					local err = raised(c, function()
+						return trigger(c)
+					end)
+					assert.is_string(err)
+					assert.matches("error in " .. name, err)
+				end)
+			end
+
+			it("several callbacks in one call raise the first error", function()
+				local c = connected()
+				subscribe(c, "cberr/several", 1)
+				local errors = {}
+				local function fail(name)
+					return function()
+						errors[#errors + 1] = ("error %d in %s"):format(#errors + 1, name)
+						error(errors[#errors])
+					end
+				end
+				-- receiving a qos 1 message logs and calls ON_MESSAGE
+				-- in the same loop call
+				c.ON_LOG = fail("ON_LOG")
+				c.ON_MESSAGE = fail("ON_MESSAGE")
+				broker:pub("cberr/several", "x", 1)
+				local err
+				local deadline = helper.now() + 2
+				while not err and helper.now() < deadline do
+					errors = {}
+					local ok, e = pcall(c.loop, c, 10)
+					if not ok then
+						err = e
+					end
+				end
+				assert.is_true(#errors >= 2)
+				assert.matches(errors[1], err, 1, true)
+			end)
+		end)
+
 		it("ON_LOG receives level and message", function()
 			local logs = {}
 			local c = new()
@@ -648,15 +838,12 @@ describe("mosquitto", function()
 	describe("tls", function()
 		-- libmosquitto 2.1 can raise SIGPIPE when a TLS connection is
 		-- closed, which would kill the test runner
-		local psignal = require("posix.signal")
-		local old_sigpipe
-
 		setup(function()
-			old_sigpipe = psignal.signal(psignal.SIGPIPE, psignal.SIG_IGN)
+			mosquitto.ignore_sigpipe()
 		end)
 
 		teardown(function()
-			psignal.signal(psignal.SIGPIPE, old_sigpipe or psignal.SIG_DFL)
+			mosquitto.restore_sigpipe()
 		end)
 
 		-- true if a connection with the given configuration is accepted
@@ -809,6 +996,14 @@ describe("mosquitto", function()
 			end)
 		end)
 
+		it("destroys a client with callbacks set", function()
+			local c = new()
+			for _, name in ipairs({ "ON_CONNECT", "ON_DISCONNECT", "ON_PUBLISH", "ON_MESSAGE", "ON_LOG" }) do
+				c[name] = function() end
+			end
+			assert.is_true(c:destroy())
+		end)
+
 		it("garbage collects destroyed and connected clients", function()
 			do
 				local c = mosquitto.new()
@@ -839,6 +1034,85 @@ describe("mosquitto", function()
 			assert.has_error(function()
 				c:reinitialise(nil, false)
 			end)
+		end)
+	end)
+
+	describe("sigpipe", function()
+		local psignal = require("posix.signal")
+		local unistd = require("posix.unistd")
+		local old_sigpipe
+
+		-- true if SIGPIPE is ignored by this process
+		local function sigpipe_ignored()
+			local f = assert(io.open("/proc/" .. unistd.getpid() .. "/status"))
+			local mask = f:read("*a"):match("SigIgn:%s*(%x+)")
+			f:close()
+			-- SIGPIPE is signal 13, bit 12 in the mask
+			return math.floor(tonumber(mask:sub(-4), 16) / 0x1000) % 2 == 1
+		end
+
+		before_each(function()
+			old_sigpipe = psignal.signal(psignal.SIGPIPE, psignal.SIG_DFL)
+		end)
+
+		after_each(function()
+			-- unwind nested calls left by a failed test
+			for _ = 1, 10 do
+				if mosquitto.restore_sigpipe() then
+					break
+				end
+			end
+			psignal.signal(psignal.SIGPIPE, old_sigpipe or psignal.SIG_DFL)
+		end)
+
+		it("ignore_sigpipe ignores SIGPIPE and restore_sigpipe restores it", function()
+			assert.is_false(sigpipe_ignored())
+			assert.is_false(mosquitto.ignore_sigpipe())
+			assert.is_true(sigpipe_ignored())
+			assert.is_true(mosquitto.restore_sigpipe())
+			assert.is_false(sigpipe_ignored())
+		end)
+
+		it("calls nest", function()
+			assert.is_false(mosquitto.ignore_sigpipe())
+			assert.is_true(mosquitto.ignore_sigpipe())
+			assert.is_false(mosquitto.restore_sigpipe())
+			assert.is_true(sigpipe_ignored())
+			assert.is_true(mosquitto.restore_sigpipe())
+			assert.is_false(sigpipe_ignored())
+		end)
+
+		it("restore_sigpipe without ignore_sigpipe does nothing", function()
+			assert.is_false(mosquitto.restore_sigpipe())
+			assert.is_false(sigpipe_ignored())
+		end)
+
+		it("keeps SIGPIPE ignored if it already was", function()
+			psignal.signal(psignal.SIGPIPE, psignal.SIG_IGN)
+			assert.is_true(mosquitto.ignore_sigpipe())
+			assert.is_true(mosquitto.restore_sigpipe())
+			assert.is_true(sigpipe_ignored())
+		end)
+
+		it("survives a TLS connection being closed", function()
+			assert.is_false(mosquitto.ignore_sigpipe())
+			local c = new()
+			assert.is_true(c:tls_set(broker.ca))
+			local connack, disconnected
+			c.ON_CONNECT = function(...)
+				connack = { ... }
+				c:disconnect()
+			end
+			c.ON_DISCONNECT = function()
+				disconnected = true
+			end
+			assert.is_true(c:connect(TLS_HOST, broker.tls_port))
+			assert.is_true(wait_for(c, function()
+				return disconnected
+			end))
+			assert.same({ true, 0, "connection accepted" }, connack)
+			c:destroy()
+			assert.is_true(mosquitto.restore_sigpipe())
 		end)
 	end)
 end)
