@@ -281,6 +281,16 @@ describe("mosquitto", function()
 			assert.is_string(msg)
 		end)
 
+		it("returns an error for an unresolvable host", function()
+			local n, ok, rc, msg = (function(...)
+				return select("#", ...), ...
+			end)(new():connect("nonexistent.invalid", 1883))
+			assert.equal(3, n)
+			assert.is_nil(ok)
+			assert.is_number(rc)
+			assert.is_string(msg)
+		end)
+
 		it("can use MQTT v5", function()
 			connected(nil, function(c)
 				assert.is_true(c:option(mosquitto.OPT_PROTOCOL_VERSION, mosquitto.MQTT_PROTOCOL_V5))

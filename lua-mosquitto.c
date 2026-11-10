@@ -99,24 +99,22 @@ static int mosq__pstatus(lua_State *L, int mosq_errno) {
 			return luaL_error(L, mosquitto_strerror(mosq_errno));
 			break;
 
-		case MOSQ_ERR_NO_CONN:
-		case MOSQ_ERR_CONN_LOST:
-		case MOSQ_ERR_PAYLOAD_SIZE:
-			lua_pushnil(L);
-			lua_pushinteger(L, mosq_errno);
-			lua_pushstring(L, mosquitto_strerror(mosq_errno));
-			return 3;
-			break;
-
 		case MOSQ_ERR_ERRNO:
 			lua_pushnil(L);
 			lua_pushinteger(L, errno);
 			lua_pushstring(L, strerror(errno));
 			return 3;
 			break;
-	}
 
-	return 0;
+		/* MOSQ_ERR_NO_CONN, MOSQ_ERR_CONN_LOST, MOSQ_ERR_EAI,
+		 * MOSQ_ERR_TLS and any other runtime error */
+		default:
+			lua_pushnil(L);
+			lua_pushinteger(L, mosq_errno);
+			lua_pushstring(L, mosquitto_strerror(mosq_errno));
+			return 3;
+			break;
+	}
 }
 
 /***
