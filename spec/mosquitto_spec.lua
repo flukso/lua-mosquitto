@@ -838,15 +838,12 @@ describe("mosquitto", function()
 	describe("tls", function()
 		-- libmosquitto 2.1 can raise SIGPIPE when a TLS connection is
 		-- closed, which would kill the test runner
-		local psignal = require("posix.signal")
-		local old_sigpipe
-
 		setup(function()
-			old_sigpipe = psignal.signal(psignal.SIGPIPE, psignal.SIG_IGN)
+			mosquitto.ignore_sigpipe()
 		end)
 
 		teardown(function()
-			psignal.signal(psignal.SIGPIPE, old_sigpipe or psignal.SIG_DFL)
+			mosquitto.restore_sigpipe()
 		end)
 
 		-- true if a connection with the given configuration is accepted
@@ -1037,6 +1034,85 @@ describe("mosquitto", function()
 			assert.has_error(function()
 				c:reinitialise(nil, false)
 			end)
+		end)
+	end)
+
+	describe("sigpipe", function()
+		local psignal = require("posix.signal")
+		local unistd = require("posix.unistd")
+		local old_sigpipe
+
+		-- true if SIGPIPE is ignored by this process
+		local function sigpipe_ignored()
+			local f = assert(io.open("/proc/" .. unistd.getpid() .. "/status"))
+			local mask = f:read("*a"):match("SigIgn:%s*(%x+)")
+			f:close()
+			-- SIGPIPE is signal 13, bit 12 in the mask
+			return math.floor(tonumber(mask:sub(-4), 16) / 0x1000) % 2 == 1
+		end
+
+		before_each(function()
+			old_sigpipe = psignal.signal(psignal.SIGPIPE, psignal.SIG_DFL)
+		end)
+
+		after_each(function()
+			-- unwind nested calls left by a failed test
+			for _ = 1, 10 do
+				if mosquitto.restore_sigpipe() then
+					break
+				end
+			end
+			psignal.signal(psignal.SIGPIPE, old_sigpipe or psignal.SIG_DFL)
+		end)
+
+		it("ignore_sigpipe ignores SIGPIPE and restore_sigpipe restores it", function()
+			assert.is_false(sigpipe_ignored())
+			assert.is_false(mosquitto.ignore_sigpipe())
+			assert.is_true(sigpipe_ignored())
+			assert.is_true(mosquitto.restore_sigpipe())
+			assert.is_false(sigpipe_ignored())
+		end)
+
+		it("calls nest", function()
+			assert.is_false(mosquitto.ignore_sigpipe())
+			assert.is_true(mosquitto.ignore_sigpipe())
+			assert.is_false(mosquitto.restore_sigpipe())
+			assert.is_true(sigpipe_ignored())
+			assert.is_true(mosquitto.restore_sigpipe())
+			assert.is_false(sigpipe_ignored())
+		end)
+
+		it("restore_sigpipe without ignore_sigpipe does nothing", function()
+			assert.is_false(mosquitto.restore_sigpipe())
+			assert.is_false(sigpipe_ignored())
+		end)
+
+		it("keeps SIGPIPE ignored if it already was", function()
+			psignal.signal(psignal.SIGPIPE, psignal.SIG_IGN)
+			assert.is_true(mosquitto.ignore_sigpipe())
+			assert.is_true(mosquitto.restore_sigpipe())
+			assert.is_true(sigpipe_ignored())
+		end)
+
+		it("survives a TLS connection being closed", function()
+			assert.is_false(mosquitto.ignore_sigpipe())
+			local c = new()
+			assert.is_true(c:tls_set(broker.ca))
+			local connack, disconnected
+			c.ON_CONNECT = function(...)
+				connack = { ... }
+				c:disconnect()
+			end
+			c.ON_DISCONNECT = function()
+				disconnected = true
+			end
+			assert.is_true(c:connect(TLS_HOST, broker.tls_port))
+			assert.is_true(wait_for(c, function()
+				return disconnected
+			end))
+			assert.same({ true, 0, "connection accepted" }, connack)
+			c:destroy()
+			assert.is_true(mosquitto.restore_sigpipe())
 		end)
 	end)
 end)
