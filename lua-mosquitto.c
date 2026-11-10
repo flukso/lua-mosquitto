@@ -94,18 +94,8 @@ static int mosq__pstatus(lua_State *L, int mosq_errno) {
 
 		case MOSQ_ERR_INVAL:
 		case MOSQ_ERR_NOMEM:
-		case MOSQ_ERR_PROTOCOL:
 		case MOSQ_ERR_NOT_SUPPORTED:
 			return luaL_error(L, mosquitto_strerror(mosq_errno));
-			break;
-
-		case MOSQ_ERR_NO_CONN:
-		case MOSQ_ERR_CONN_LOST:
-		case MOSQ_ERR_PAYLOAD_SIZE:
-			lua_pushnil(L);
-			lua_pushinteger(L, mosq_errno);
-			lua_pushstring(L, mosquitto_strerror(mosq_errno));
-			return 3;
 			break;
 
 		case MOSQ_ERR_ERRNO:
@@ -114,9 +104,16 @@ static int mosq__pstatus(lua_State *L, int mosq_errno) {
 			lua_pushstring(L, strerror(errno));
 			return 3;
 			break;
-	}
 
-	return 0;
+		/* MOSQ_ERR_NO_CONN, MOSQ_ERR_CONN_LOST, MOSQ_ERR_PROTOCOL,
+		 * MOSQ_ERR_EAI, MOSQ_ERR_TLS and any other runtime error */
+		default:
+			lua_pushnil(L);
+			lua_pushinteger(L, mosq_errno);
+			lua_pushstring(L, mosquitto_strerror(mosq_errno));
+			return 3;
+			break;
+	}
 }
 
 /***
@@ -315,8 +312,8 @@ static int ctx_destroy(lua_State *L)
 static int ctx_reinitialise(lua_State *L)
 {
 	ctx_t *ctx = ctx_check(L, 1);
-	const char *id = luaL_optstring(L, 1, NULL);
-	bool clean_session = (lua_isboolean(L, 2) ? lua_toboolean(L, 2) : true);
+	const char *id = luaL_optstring(L, 2, NULL);
+	bool clean_session = (lua_isboolean(L, 3) ? lua_toboolean(L, 3) : true);
 
 	if (id == NULL && !clean_session) {
 		return luaL_argerror(L, 3, "if 'id' is nil then 'clean session' must be true");
@@ -1090,7 +1087,7 @@ static int ctx_callback_set(lua_State *L)
 	ctx_t *ctx = ctx_check(L, 1);
 	int callback_type;
 
-	if (lua_isstring(L, 2)) {
+	if (lua_type(L, 2) == LUA_TSTRING) {
 		callback_type = callback_type_from_string(lua_tostring(L, 2));
 	} else {
 		callback_type = luaL_checkinteger(L, 2);

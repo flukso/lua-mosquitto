@@ -190,6 +190,18 @@ describe("mosquitto", function()
 			c.ON_PUBLISH = f
 		end)
 
+		it("can be set by constant", function()
+			local called
+			local c = new()
+			assert.is_true(c:callback_set(mosquitto.ON_CONNECT, function()
+				called = true
+			end))
+			assert.is_true(c:connect(HOST, broker.port))
+			assert.is_true(wait_for(c, function()
+				return called
+			end))
+		end)
+
 		it("raises on unknown callback type", function()
 			local c = new()
 			assert.has_error(function()
@@ -269,6 +281,16 @@ describe("mosquitto", function()
 			assert.is_string(msg)
 		end)
 
+		it("returns an error for an unresolvable host", function()
+			local n, ok, rc, msg = (function(...)
+				return select("#", ...), ...
+			end)(new():connect("nonexistent.invalid", 1883))
+			assert.equal(3, n)
+			assert.is_nil(ok)
+			assert.is_number(rc)
+			assert.is_string(msg)
+		end)
+
 		it("can use MQTT v5", function()
 			connected(nil, function(c)
 				assert.is_true(c:option(mosquitto.OPT_PROTOCOL_VERSION, mosquitto.MQTT_PROTOCOL_V5))
@@ -320,6 +342,36 @@ describe("mosquitto", function()
 			assert.is_false(args[1])
 			assert.is_not.equal(0, args[2])
 			assert.equal("unexpected disconnect", args[3])
+		end)
+
+		it("returns an error when the broker sends an invalid packet", function()
+			local fake = helper.fake_broker()
+			finally(fake.close)
+			local c = new()
+			local connected, args
+			c.ON_CONNECT = function()
+				connected = true
+			end
+			c.ON_DISCONNECT = function(...)
+				args = { ... }
+			end
+			assert.is_true(c:connect(HOST, fake.port))
+			fake.accept()
+			fake.recv() -- CONNECT
+			fake.send("\32\2\0\0") -- CONNACK, connection accepted
+			assert.is_true(wait_for(c, function()
+				return connected
+			end))
+			fake.send("\0\0") -- reserved packet type
+			local ok, rc, msg
+			local deadline = helper.now() + 2
+			repeat
+				ok, rc, msg = c:loop(10)
+			until not ok or helper.now() > deadline
+			assert.is_nil(ok)
+			assert.equal(2, rc) -- MOSQ_ERR_PROTOCOL
+			assert.is_string(msg)
+			assert.is_false(args[1])
 		end)
 
 		it("returns an error when not connected", function()
@@ -767,6 +819,26 @@ describe("mosquitto", function()
 			end
 			collectgarbage()
 			collectgarbage()
+		end)
+
+		it("reinitialise resets the client", function()
+			local c = new()
+			local called
+			c.ON_CONNECT = function()
+				called = true
+			end
+			assert.is_true(c:reinitialise("spec-reinit", true))
+			assert.is_true(c:connect(HOST, broker.port))
+			spin(c, 100)
+			assert.is_nil(called)
+			assert.truthy(broker:log():find("as spec-reinit", 1, true))
+		end)
+
+		it("reinitialise requires clean session without client id", function()
+			local c = new()
+			assert.has_error(function()
+				c:reinitialise(nil, false)
+			end)
 		end)
 	end)
 end)
