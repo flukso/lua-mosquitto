@@ -289,6 +289,145 @@ describe("mosquitto", function()
 			end))
 		end)
 
+		it("errors are raised from loop", function()
+			local c = new()
+			c.ON_CONNECT = function()
+				error("error in ON_CONNECT")
+			end
+			assert.is_true(c:connect(HOST, broker.port))
+			assert.has_error(function()
+				wait_for(c, function()
+					return false
+				end)
+			end, "error in ON_CONNECT")
+		end)
+
+		it("errors keep their value", function()
+			local c = new()
+			local err = { "error object" }
+			c.ON_LOG = function()
+				error(err)
+			end
+			local ok, got = pcall(c.connect, c, HOST, broker.port)
+			assert.is_false(ok)
+			assert.equal(err, got)
+		end)
+
+		it("an error does not disturb message delivery", function()
+			local c = connected()
+			subscribe(c, "cberr", 1)
+			local state = { msgs = {} }
+			c.ON_MESSAGE = function(_, _, payload)
+				state.msgs[#state.msgs + 1] = { payload = payload }
+				if #state.msgs == 1 then
+					error("error in ON_MESSAGE")
+				end
+			end
+			c:publish("cberr", "1", 1)
+			c:publish("cberr", "2", 1)
+			local errors = 0
+			local deadline = helper.now() + 2
+			while #state.msgs < 2 and helper.now() < deadline do
+				local ok, err = pcall(c.loop, c, 10)
+				if not ok then
+					errors = errors + 1
+					assert.matches("error in ON_MESSAGE", err)
+				end
+			end
+			spin(c, 100)
+			assert.equal(1, errors)
+			assert.same({ "1", "2" }, { state.msgs[1].payload, state.msgs[2] and state.msgs[2].payload })
+			assert.equal(2, #state.msgs)
+		end)
+
+		describe("errors from", function()
+			-- call trigger(), then run the loop until a call raises
+			-- an error. Returns the error.
+			local function raised(c, trigger)
+				local ok, err = pcall(trigger)
+				if not ok then
+					return err
+				end
+				local deadline = helper.now() + 2
+				while helper.now() < deadline do
+					ok, err = pcall(c.loop, c, 10)
+					if not ok then
+						return err
+					end
+				end
+			end
+
+			-- callback name, client setup, and the call that triggers it
+			for _, case in ipairs({
+				{ "ON_CONNECT", new, function(c)
+					return c:connect(HOST, broker.port)
+				end },
+				{ "ON_DISCONNECT", connected, function(c)
+					return c:disconnect()
+				end },
+				{ "ON_PUBLISH", connected, function(c)
+					return c:publish("cberr/publish", "x", 1)
+				end },
+				{ "ON_MESSAGE", function()
+					local c = connected()
+					subscribe(c, "cberr/message", 1)
+					return c
+				end, function(c)
+					return c:publish("cberr/message", "x", 1)
+				end },
+				{ "ON_SUBSCRIBE", connected, function(c)
+					return c:subscribe("cberr/subscribe", 1)
+				end },
+				{ "ON_UNSUBSCRIBE", connected, function(c)
+					return c:unsubscribe("cberr/unsubscribe")
+				end },
+				{ "ON_LOG", new, function(c)
+					return c:connect(HOST, broker.port)
+				end },
+			}) do
+				local name, setup, trigger = case[1], case[2], case[3]
+				it(name .. " are raised", function()
+					local c = setup()
+					c[name] = function()
+						error("error in " .. name)
+					end
+					local err = raised(c, function()
+						return trigger(c)
+					end)
+					assert.is_string(err)
+					assert.matches("error in " .. name, err)
+				end)
+			end
+
+			it("several callbacks in one call raise the first error", function()
+				local c = connected()
+				subscribe(c, "cberr/several", 1)
+				local errors = {}
+				local function fail(name)
+					return function()
+						errors[#errors + 1] = ("error %d in %s"):format(#errors + 1, name)
+						error(errors[#errors])
+					end
+				end
+				-- receiving a qos 1 message logs and calls ON_MESSAGE
+				-- in the same loop call
+				c.ON_LOG = fail("ON_LOG")
+				c.ON_MESSAGE = fail("ON_MESSAGE")
+				broker:pub("cberr/several", "x", 1)
+				local err
+				local deadline = helper.now() + 2
+				while not err and helper.now() < deadline do
+					errors = {}
+					local ok, e = pcall(c.loop, c, 10)
+					if not ok then
+						err = e
+					end
+				end
+				assert.is_true(#errors >= 2)
+				assert.matches(errors[1], err, 1, true)
+			end)
+		end)
+
 		it("ON_LOG receives level and message", function()
 			local logs = {}
 			local c = new()

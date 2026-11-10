@@ -80,6 +80,8 @@ typedef struct {
 	int on_subscribe;
 	int on_unsubscribe;
 	int on_log;
+	int error;	/* first error raised by a callback, or LUA_NOREF */
+	int depth;	/* nesting of calls into libmosquitto */
 } ctx_t;
 
 static int mosq_initialized = 0;
@@ -210,6 +212,7 @@ static void ctx__on_init(ctx_t *ctx)
 	ctx->on_subscribe = LUA_REFNIL;
 	ctx->on_unsubscribe = LUA_REFNIL;
 	ctx->on_log = LUA_REFNIL;
+	ctx->error = LUA_NOREF;
 }
 
 static void ctx__on_clear(lua_State *L, ctx_t *ctx)
@@ -221,6 +224,7 @@ static void ctx__on_clear(lua_State *L, ctx_t *ctx)
 	luaL_unref(L, LUA_REGISTRYINDEX, ctx->on_subscribe);
 	luaL_unref(L, LUA_REGISTRYINDEX, ctx->on_unsubscribe);
 	luaL_unref(L, LUA_REGISTRYINDEX, ctx->on_log);
+	luaL_unref(L, LUA_REGISTRYINDEX, ctx->error);
 }
 
 /***
@@ -251,6 +255,7 @@ static int mosq_new(lua_State *L)
 	}
 
 	ctx->L = NULL;
+	ctx->depth = 0;
 	ctx__on_init(ctx);
 
 	luaL_getmetatable(L, MOSQ_META_CTX);
@@ -271,12 +276,31 @@ static lua_State *ctx__enter(ctx_t *ctx, lua_State *L)
 {
 	lua_State *prev = ctx->L;
 	ctx->L = L;
+	ctx->depth++;
 	return prev;
 }
 
-static void ctx__leave(ctx_t *ctx, lua_State *prev)
+/* Callbacks run in a protected call, as a Lua error must not longjmp
+ * through libmosquitto. The first error is kept and raised by
+ * ctx__leave() when libmosquitto has returned. */
+static void ctx__save_error(ctx_t *ctx, lua_State *L)
+{
+	if (ctx->error == LUA_NOREF) {
+		ctx->error = luaL_ref(L, LUA_REGISTRYINDEX);
+	} else {
+		lua_pop(L, 1);
+	}
+}
+
+static void ctx__leave(ctx_t *ctx, lua_State *L, lua_State *prev)
 {
 	ctx->L = prev;
+	if (--ctx->depth == 0 && ctx->error != LUA_NOREF) {
+		lua_rawgeti(L, LUA_REGISTRYINDEX, ctx->error);
+		luaL_unref(L, LUA_REGISTRYINDEX, ctx->error);
+		ctx->error = LUA_NOREF;
+		lua_error(L);
+	}
 }
 
 /***
@@ -589,7 +613,7 @@ static int ctx_connect(lua_State *L)
 
 	lua_State *prev = ctx__enter(ctx, L);
 	int rc = mosquitto_connect(ctx->mosq, host, port, keepalive);
-	ctx__leave(ctx, prev);
+	ctx__leave(ctx, L, prev);
 	return mosq__pstatus(L, rc);
 }
 
@@ -615,7 +639,7 @@ static int ctx_connect_async(lua_State *L)
 
 	lua_State *prev = ctx__enter(ctx, L);
 	int rc = mosquitto_connect_async(ctx->mosq, host, port, keepalive);
-	ctx__leave(ctx, prev);
+	ctx__leave(ctx, L, prev);
 	return mosq__pstatus(L, rc);
 }
 
@@ -634,7 +658,7 @@ static int ctx_reconnect(lua_State *L)
 
 	lua_State *prev = ctx__enter(ctx, L);
 	int rc = mosquitto_reconnect(ctx->mosq);
-	ctx__leave(ctx, prev);
+	ctx__leave(ctx, L, prev);
 	return mosq__pstatus(L, rc);
 }
 
@@ -653,7 +677,7 @@ static int ctx_reconnect_async(lua_State *L)
 
 	lua_State *prev = ctx__enter(ctx, L);
 	int rc = mosquitto_reconnect_async(ctx->mosq);
-	ctx__leave(ctx, prev);
+	ctx__leave(ctx, L, prev);
 	return mosq__pstatus(L, rc);
 }
 
@@ -672,7 +696,7 @@ static int ctx_disconnect(lua_State *L)
 
 	lua_State *prev = ctx__enter(ctx, L);
 	int rc = mosquitto_disconnect(ctx->mosq);
-	ctx__leave(ctx, prev);
+	ctx__leave(ctx, L, prev);
 	return mosq__pstatus(L, rc);
 }
 
@@ -708,7 +732,7 @@ static int ctx_publish(lua_State *L)
 
 	lua_State *prev = ctx__enter(ctx, L);
 	int rc = mosquitto_publish(ctx->mosq, &mid, topic, payloadlen, payload, qos, retain);
-	ctx__leave(ctx, prev);
+	ctx__leave(ctx, L, prev);
 
 	if (rc != MOSQ_ERR_SUCCESS) {
 		return mosq__pstatus(L, rc);
@@ -739,7 +763,7 @@ static int ctx_subscribe(lua_State *L)
 
 	lua_State *prev = ctx__enter(ctx, L);
 	int rc = mosquitto_subscribe(ctx->mosq, &mid, sub, qos);
-	ctx__leave(ctx, prev);
+	ctx__leave(ctx, L, prev);
 
 	if (rc != MOSQ_ERR_SUCCESS) {
 		return mosq__pstatus(L, rc);
@@ -768,7 +792,7 @@ static int ctx_unsubscribe(lua_State *L)
 
 	lua_State *prev = ctx__enter(ctx, L);
 	int rc = mosquitto_unsubscribe(ctx->mosq, &mid, sub);
-	ctx__leave(ctx, prev);
+	ctx__leave(ctx, L, prev);
 
 	if (rc != MOSQ_ERR_SUCCESS) {
 		return mosq__pstatus(L, rc);
@@ -790,7 +814,7 @@ static int mosq_loop(lua_State *L, bool forever)
 	} else {
 		rc = mosquitto_loop(ctx->mosq, timeout, max_packets);
 	}
-	ctx__leave(ctx, prev);
+	ctx__leave(ctx, L, prev);
 	return mosq__pstatus(L, rc);
 }
 
@@ -909,7 +933,7 @@ static int ctx_loop_read(lua_State *L)
 	int max_packets = luaL_optinteger(L, 2, 1);
 	lua_State *prev = ctx__enter(ctx, L);
 	int rc = mosquitto_loop_read(ctx->mosq, max_packets);
-	ctx__leave(ctx, prev);
+	ctx__leave(ctx, L, prev);
 	return mosq__pstatus(L, rc);
 }
 
@@ -930,7 +954,7 @@ static int ctx_loop_write(lua_State *L)
 	int max_packets = luaL_optinteger(L, 2, 1);
 	lua_State *prev = ctx__enter(ctx, L);
 	int rc = mosquitto_loop_write(ctx->mosq, max_packets);
-	ctx__leave(ctx, prev);
+	ctx__leave(ctx, L, prev);
 	return mosq__pstatus(L, rc);
 }
 
@@ -949,7 +973,7 @@ static int ctx_loop_misc(lua_State *L)
 	ctx_t *ctx = ctx_check(L, 1);
 	lua_State *prev = ctx__enter(ctx, L);
 	int rc = mosquitto_loop_misc(ctx->mosq);
-	ctx__leave(ctx, prev);
+	ctx__leave(ctx, L, prev);
 	return mosq__pstatus(L, rc);
 }
 
@@ -1028,10 +1052,8 @@ static void ctx_on_connect(
 	lua_pushcfunction(L, ctx_on_connect_safe);
 	lua_pushinteger(L, ctx->on_connect);
 	lua_pushinteger(L, rc);
-	if (lua_pcall(L, 2, 0, 0)) {
-		/* pop error message */
-		lua_pop(L, 1);
-	}
+	if (lua_pcall(L, 2, 0, 0))
+		ctx__save_error(ctx, L);
 }
 
 
@@ -1070,10 +1092,8 @@ static void ctx_on_disconnect(
 	lua_pushcfunction(L, ctx_on_disconnect_safe);
 	lua_pushinteger(L, ctx->on_disconnect);
 	lua_pushinteger(L, rc);
-	if (lua_pcall(L, 2, 0, 0)) {
-		/* pop error message */
-		lua_pop(L, 1);
-	}
+	if (lua_pcall(L, 2, 0, 0))
+		ctx__save_error(ctx, L);
 }
 
 static void ctx_on_publish(
@@ -1088,10 +1108,8 @@ static void ctx_on_publish(
 		return;
 	lua_rawgeti(L, LUA_REGISTRYINDEX, ctx->on_publish);
 	lua_pushinteger(L, mid);
-	if (lua_pcall(L, 1, 0, 0)) {
-		/* pop error message */
-		lua_pop(L, 1);
-	}
+	if (lua_pcall(L, 1, 0, 0))
+		ctx__save_error(ctx, L);
 }
 
 static int ctx_on_message_safe(lua_State *L) {
@@ -1125,10 +1143,8 @@ static void ctx_on_message(
 	lua_pushcfunction(L, ctx_on_message_safe);
 	lua_pushinteger(L, ctx->on_message);
 	lua_pushlightuserdata(L, (void*)msg);
-	if (lua_pcall(L, 2, 0, 0)) {
-		/* pop error message */
-		lua_pop(L, 1);
-	}
+	if (lua_pcall(L, 2, 0, 0))
+		ctx__save_error(ctx, L);
 }
 
 static void ctx_on_subscribe(
@@ -1156,10 +1172,8 @@ static void ctx_on_subscribe(
 		lua_pushinteger(L, granted_qos[i]);
 	}
 
-	if (lua_pcall(L, qos_count + 1, 0, 0)) {
-		/* pop error message */
-		lua_pop(L, 1);
-	}
+	if (lua_pcall(L, qos_count + 1, 0, 0))
+		ctx__save_error(ctx, L);
 }
 
 static void ctx_on_unsubscribe(
@@ -1174,10 +1188,8 @@ static void ctx_on_unsubscribe(
 		return;
 	lua_rawgeti(L, LUA_REGISTRYINDEX, ctx->on_unsubscribe);
 	lua_pushinteger(L, mid);
-	if (lua_pcall(L, 1, 0, 0)) {
-		/* pop error message */
-		lua_pop(L, 1);
-	}
+	if (lua_pcall(L, 1, 0, 0))
+		ctx__save_error(ctx, L);
 }
 
 static int ctx_on_log_safe(lua_State *L) {
@@ -1210,10 +1222,8 @@ static void ctx_on_log(
 	lua_pushinteger(L, ctx->on_log);
 	lua_pushinteger(L, level);
 	lua_pushlightuserdata(L, (void*)str);
-	if (lua_pcall(L, 3, 0, 0)) {
-		/* pop error message */
-		lua_pop(L, 1);
-	}
+	if (lua_pcall(L, 3, 0, 0))
+		ctx__save_error(ctx, L);
 }
 
 static int callback_type_from_string(const char *);
