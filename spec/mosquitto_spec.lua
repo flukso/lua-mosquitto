@@ -190,6 +190,18 @@ describe("mosquitto", function()
 			c.ON_PUBLISH = f
 		end)
 
+		it("can be set by constant", function()
+			local called
+			local c = new()
+			assert.is_true(c:callback_set(mosquitto.ON_CONNECT, function()
+				called = true
+			end))
+			assert.is_true(c:connect(HOST, broker.port))
+			assert.is_true(wait_for(c, function()
+				return called
+			end))
+		end)
+
 		it("raises on unknown callback type", function()
 			local c = new()
 			assert.has_error(function()

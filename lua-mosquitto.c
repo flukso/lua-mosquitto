@@ -1090,7 +1090,7 @@ static int ctx_callback_set(lua_State *L)
 	ctx_t *ctx = ctx_check(L, 1);
 	int callback_type;
 
-	if (lua_isstring(L, 2)) {
+	if (lua_type(L, 2) == LUA_TSTRING) {
 		callback_type = callback_type_from_string(lua_tostring(L, 2));
 	} else {
 		callback_type = luaL_checkinteger(L, 2);
