@@ -313,8 +313,8 @@ static int ctx_destroy(lua_State *L)
 static int ctx_reinitialise(lua_State *L)
 {
 	ctx_t *ctx = ctx_check(L, 1);
-	const char *id = luaL_optstring(L, 1, NULL);
-	bool clean_session = (lua_isboolean(L, 2) ? lua_toboolean(L, 2) : true);
+	const char *id = luaL_optstring(L, 2, NULL);
+	bool clean_session = (lua_isboolean(L, 3) ? lua_toboolean(L, 3) : true);
 
 	if (id == NULL && !clean_session) {
 		return luaL_argerror(L, 3, "if 'id' is nil then 'clean session' must be true");

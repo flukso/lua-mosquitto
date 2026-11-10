@@ -790,5 +790,25 @@ describe("mosquitto", function()
 			collectgarbage()
 			collectgarbage()
 		end)
+
+		it("reinitialise resets the client", function()
+			local c = new()
+			local called
+			c.ON_CONNECT = function()
+				called = true
+			end
+			assert.is_true(c:reinitialise("spec-reinit", true))
+			assert.is_true(c:connect(HOST, broker.port))
+			spin(c, 100)
+			assert.is_nil(called)
+			assert.truthy(broker:log():find("as spec-reinit", 1, true))
+		end)
+
+		it("reinitialise requires clean session without client id", function()
+			local c = new()
+			assert.has_error(function()
+				c:reinitialise(nil, false)
+			end)
+		end)
 	end)
 end)
