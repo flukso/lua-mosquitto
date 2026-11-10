@@ -809,6 +809,14 @@ describe("mosquitto", function()
 			end)
 		end)
 
+		it("destroys a client with callbacks set", function()
+			local c = new()
+			for _, name in ipairs({ "ON_CONNECT", "ON_DISCONNECT", "ON_PUBLISH", "ON_MESSAGE", "ON_LOG" }) do
+				c[name] = function() end
+			end
+			assert.is_true(c:destroy())
+		end)
+
 		it("garbage collects destroyed and connected clients", function()
 			do
 				local c = mosquitto.new()

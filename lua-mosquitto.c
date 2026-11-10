@@ -212,15 +212,15 @@ static void ctx__on_init(ctx_t *ctx)
 	ctx->on_log = LUA_REFNIL;
 }
 
-static void ctx__on_clear(ctx_t *ctx)
+static void ctx__on_clear(lua_State *L, ctx_t *ctx)
 {
-	luaL_unref(ctx->L, LUA_REGISTRYINDEX, ctx->on_connect);
-	luaL_unref(ctx->L, LUA_REGISTRYINDEX, ctx->on_disconnect);
-	luaL_unref(ctx->L, LUA_REGISTRYINDEX, ctx->on_publish);
-	luaL_unref(ctx->L, LUA_REGISTRYINDEX, ctx->on_message);
-	luaL_unref(ctx->L, LUA_REGISTRYINDEX, ctx->on_subscribe);
-	luaL_unref(ctx->L, LUA_REGISTRYINDEX, ctx->on_unsubscribe);
-	luaL_unref(ctx->L, LUA_REGISTRYINDEX, ctx->on_log);
+	luaL_unref(L, LUA_REGISTRYINDEX, ctx->on_connect);
+	luaL_unref(L, LUA_REGISTRYINDEX, ctx->on_disconnect);
+	luaL_unref(L, LUA_REGISTRYINDEX, ctx->on_publish);
+	luaL_unref(L, LUA_REGISTRYINDEX, ctx->on_message);
+	luaL_unref(L, LUA_REGISTRYINDEX, ctx->on_subscribe);
+	luaL_unref(L, LUA_REGISTRYINDEX, ctx->on_unsubscribe);
+	luaL_unref(L, LUA_REGISTRYINDEX, ctx->on_log);
 }
 
 /***
@@ -287,7 +287,7 @@ static int ctx_destroy(lua_State *L)
 	mosquitto_destroy(ctx->mosq);
 
 	/* clean up Lua callback functions in the registry */
-	ctx__on_clear(ctx);
+	ctx__on_clear(L, ctx);
 
 	/* remove all methods operating on ctx */
 	lua_newtable(L);
@@ -322,7 +322,7 @@ static int ctx_reinitialise(lua_State *L)
 	int rc = mosquitto_reinitialise(ctx->mosq, id, clean_session, ctx);
 
 	/* clean up Lua callback functions in the registry */
-	ctx__on_clear(ctx);
+	ctx__on_clear(L, ctx);
 	ctx__on_init(ctx);
 
 	return mosq__pstatus(L, rc);
