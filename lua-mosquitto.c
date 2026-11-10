@@ -94,7 +94,6 @@ static int mosq__pstatus(lua_State *L, int mosq_errno) {
 
 		case MOSQ_ERR_INVAL:
 		case MOSQ_ERR_NOMEM:
-		case MOSQ_ERR_PROTOCOL:
 		case MOSQ_ERR_NOT_SUPPORTED:
 			return luaL_error(L, mosquitto_strerror(mosq_errno));
 			break;
@@ -106,8 +105,8 @@ static int mosq__pstatus(lua_State *L, int mosq_errno) {
 			return 3;
 			break;
 
-		/* MOSQ_ERR_NO_CONN, MOSQ_ERR_CONN_LOST, MOSQ_ERR_EAI,
-		 * MOSQ_ERR_TLS and any other runtime error */
+		/* MOSQ_ERR_NO_CONN, MOSQ_ERR_CONN_LOST, MOSQ_ERR_PROTOCOL,
+		 * MOSQ_ERR_EAI, MOSQ_ERR_TLS and any other runtime error */
 		default:
 			lua_pushnil(L);
 			lua_pushinteger(L, mosq_errno);

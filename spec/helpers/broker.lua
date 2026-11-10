@@ -229,6 +229,37 @@ function Broker:pub(topic, payload, qos, retain)
 	))
 end
 
+--- A fake broker that accepts a single connection and lets the test
+--- send raw bytes, to simulate a misbehaving broker.
+function M.fake_broker()
+	local srv = tcp_socket()
+	assert(socket.bind(srv, { family = socket.AF_INET, addr = M.HOST, port = 0 }))
+	assert(socket.listen(srv, 1))
+	local fake = { port = assert(socket.getsockname(srv)).port }
+
+	--- Accept the client connection. Call after the client connected.
+	function fake.accept()
+		fake.conn = assert(socket.accept(srv))
+	end
+
+	function fake.recv()
+		return assert(socket.recv(fake.conn, 65536))
+	end
+
+	function fake.send(data)
+		assert(socket.send(fake.conn, data) == #data)
+	end
+
+	function fake.close()
+		if fake.conn then
+			unistd.close(fake.conn)
+		end
+		unistd.close(srv)
+	end
+
+	return fake
+end
+
 --- Run the client's network loop until cond() returns true, the
 --- connection is lost or `timeout` seconds pass. Returns cond().
 function M.wait_for(client, cond, timeout)

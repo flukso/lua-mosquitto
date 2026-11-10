@@ -344,6 +344,36 @@ describe("mosquitto", function()
 			assert.equal("unexpected disconnect", args[3])
 		end)
 
+		it("returns an error when the broker sends an invalid packet", function()
+			local fake = helper.fake_broker()
+			finally(fake.close)
+			local c = new()
+			local connected, args
+			c.ON_CONNECT = function()
+				connected = true
+			end
+			c.ON_DISCONNECT = function(...)
+				args = { ... }
+			end
+			assert.is_true(c:connect(HOST, fake.port))
+			fake.accept()
+			fake.recv() -- CONNECT
+			fake.send("\32\2\0\0") -- CONNACK, connection accepted
+			assert.is_true(wait_for(c, function()
+				return connected
+			end))
+			fake.send("\0\0") -- reserved packet type
+			local ok, rc, msg
+			local deadline = helper.now() + 2
+			repeat
+				ok, rc, msg = c:loop(10)
+			until not ok or helper.now() > deadline
+			assert.is_nil(ok)
+			assert.equal(2, rc) -- MOSQ_ERR_PROTOCOL
+			assert.is_string(msg)
+			assert.is_false(args[1])
+		end)
+
 		it("returns an error when not connected", function()
 			local ok, rc, msg = new():disconnect()
 			assert.is_nil(ok)
