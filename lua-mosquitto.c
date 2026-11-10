@@ -854,6 +854,11 @@ static int ctx_loop_forever(lua_State *L)
 
 /***
  * Start a loop thread
+ * The callbacks are called from the new thread. A Lua state must not be
+ * used by two threads at the same time, so this is only safe if no other
+ * Lua code runs in the same Lua state while the thread is running.
+ * Prefer loop() or loop_forever(), or use socket(), loop_read(),
+ * loop_write() and loop_misc() from your own event loop.
  * @function loop_start
  * @see mosquitto_loop_start
  * @return[1] boolean true
