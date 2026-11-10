@@ -238,6 +238,57 @@ describe("mosquitto", function()
 			assert.is_nil(first)
 		end)
 
+		it("ON_LOG is called from connect and publish", function()
+			local c = new()
+			local logs = 0
+			c.ON_LOG = function()
+				logs = logs + 1
+			end
+			assert.is_true(c:connect(HOST, broker.port))
+			assert.is_true(logs > 0)
+			logs = 0
+			assert.is_number(c:publish("log", "x"))
+			assert.is_true(logs > 0)
+		end)
+
+		it("run in the coroutine that calls loop", function()
+			local c = new()
+			local co
+			c.ON_CONNECT = function()
+				co = coroutine.running()
+			end
+			assert.is_true(c:connect(HOST, broker.port))
+			local loop_co = coroutine.create(function()
+				assert.is_true(wait_for(c, function()
+					return co
+				end))
+			end)
+			assert.is_true(coroutine.resume(loop_co))
+			assert.equal(loop_co, co)
+		end)
+
+		it("work after the coroutine that created the client is dead", function()
+			local c
+			local creator = coroutine.create(function()
+				c = new()
+				error("die")
+			end)
+			assert.is_false(coroutine.resume(creator))
+			assert.equal("dead", coroutine.status(creator))
+			creator = nil
+			collectgarbage()
+			collectgarbage()
+
+			local connected
+			c.ON_CONNECT = function()
+				connected = true
+			end
+			assert.is_true(c:connect(HOST, broker.port))
+			assert.is_true(wait_for(c, function()
+				return connected
+			end))
+		end)
+
 		it("ON_LOG receives level and message", function()
 			local logs = {}
 			local c = new()
