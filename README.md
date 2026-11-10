@@ -72,3 +72,14 @@ client:connect(broker)
 client:loop_forever()
 ```
 
+
+Testing
+-------
+The tests need [busted](https://lunarmodules.github.io/busted/),
+luaposix, mosquitto, mosquitto_pub, mosquitto_passwd and openssl. They
+build the module under `.build/<lua>/` and start a private mosquitto
+broker on free ports.
+
+    make check                 # run tests with lua5.5
+    make check LUA=luajit      # pick another interpreter
+    make check-all             # run with all supported Lua versions

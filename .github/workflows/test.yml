@@ -1,0 +1,18 @@
+name: test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        alpine: [latest, edge]
+        lua: [lua5.1, lua5.2, lua5.3, lua5.4, lua5.5, luajit]
+    container: alpine:${{ matrix.alpine }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: .github/ci.sh ${{ matrix.lua }}
